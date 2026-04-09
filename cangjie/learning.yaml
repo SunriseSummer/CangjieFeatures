@@ -333,7 +333,9 @@
         - primary_constructor_syntax
         - auto_field_creation
       code: |
-        class Pair(let first: Int64, let second: Int64) {}
+        class Pair {
+            public Pair(let first: Int64, let second: Int64) {}
+        }
         let p = Pair(1, 2)
 
     - id: struct_point
@@ -410,6 +412,10 @@
         struct Vec2 {
             var x: Float64 = 0.0
             var y: Float64 = 0.0
+            public init(x: Float64, y: Float64) {
+                this.x = x
+                this.y = y
+            }
             public operator func +(r: Vec2): Vec2 {
                 Vec2(x + r.x, y + r.y)
             }
@@ -727,16 +733,6 @@
       code: |
         throw "not an exception"
 
-    - id: uncaught_exception_example
-      construct: error_handling
-      expected_diagnostic: uncaught_exception
-      code: |
-        func fail(): Unit {
-            throw IllegalArgumentException("bad input")
-        }
-        main(): Unit {
-            fail()
-        }
 
     - id: interface_missing_impl
       construct: interface_decl
@@ -833,7 +829,9 @@
       summary: Use primary constructor to declare fields and constructor in one line.
       requires: [class_decl, struct_decl]
       template: |
-        struct Point(let x: Float64, let y: Float64) {}
+        struct Point {
+            public Point(let x: Float64, let y: Float64) {}
+        }
         let p = Point(1.0, 2.0)
 
     - id: while_let_iterator

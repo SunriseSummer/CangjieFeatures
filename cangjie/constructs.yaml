@@ -473,7 +473,10 @@
         - "abstract class Shape { public func area(): Float64 }"
         - "sealed abstract class Expr {}"
         - "class Dog <: Animal { public override func speak(): Unit { println(\"Woof\") } }"
-        - "class Pair(let first: Int64, let second: Int64) {}"
+        - |
+          class Pair {
+              public Pair(let first: Int64, let second: Int64) {}
+          }
         - |
           class Res {
               public init() {}
@@ -491,7 +494,7 @@
         note: "Instance: override. Static: redef. Name and param signature must match."
       - id: primary_constructor
         op: primary_constructor_syntax
-        note: "ClassName(let x: T, var y: T) {} — at most one, creates fields from params. Cannot coexist with this() call."
+        note: "Declared inside class body with ClassName as name: class C { public C(let x: T, var y: T) {} }. At most one, creates fields from params. Cannot coexist with this() call."
       - id: static_init
         op: static_init_block
         note: "static init() { } — one per class, inits uninitialized static members, no access mods."
@@ -545,7 +548,7 @@
         note: Direct or indirect recursion in value-type fields is forbidden.
       - id: primary_constructor
         op: primary_constructor_syntax
-        note: "StructName(let x: T, var y: T) {} — same syntax as class primary constructor."
+        note: "Declared inside struct body with StructName as name: struct S { public S(let x: T, var y: T) {} }. Same syntax as class primary constructor."
       - id: static_init
         op: static_init_block
         note: "static init() { } — one per struct, inits uninitialized static members, no access mods."
