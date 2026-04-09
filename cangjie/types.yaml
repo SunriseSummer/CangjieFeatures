@@ -51,11 +51,12 @@
   - id: String
     kind: value
     summary: UTF-8 encoded string (struct type, value semantics). for-in iterates bytes (UInt8); use runes() for Rune characters.
-    implements: ["Collection<UInt8>", "Comparable<String>", Hashable, ToString]
+    implements: ["Collection<Byte>", "Comparable<String>", Hashable, ToString]
     notes:
       - ".size returns UTF-8 byte count, not character count."
       - "s[i] returns UInt8 (byte), not a character."
       - "Interpolation: \"${expr}\" in non-raw literals."
+      - "Supports + operator for concatenation."
   - id: StringBuilder
     kind: reference
     summary: Efficient mutable string builder for concatenation-heavy code.
@@ -429,6 +430,12 @@
       - "Variable: getValue()/setValue(). Property: getValue(obj)/setValue(obj, val). Function: apply(obj, args)."
       - "findAnnotation<T>() to retrieve annotations."
       - "Cannot get TypeInfo of uninstantiated generic types."
+      - "For class objects, prefer ClassTypeInfo.of(obj: Object) over TypeInfo.of(obj)."
+
+  - id: ClassTypeInfo
+    kind: reference
+    summary: "Subtype of TypeInfo for class objects. Obtained via ClassTypeInfo.of(obj: Object). Recommended over TypeInfo.of for class instances."
+    import: std.reflect.*
 
 type_system:
   facts:

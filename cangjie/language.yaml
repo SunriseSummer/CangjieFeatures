@@ -98,6 +98,7 @@ symbol_catalog:
     - Exception
     - Error
     - TypeInfo
+    - ClassTypeInfo
     - StringBuilder
   interfaces:
     - Any

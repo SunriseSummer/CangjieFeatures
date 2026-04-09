@@ -51,6 +51,7 @@
       - init
       - interface
       - let
+      - macro
       - main
       - mut
       - open
@@ -178,6 +179,7 @@
       - symbol: "**"
         precedence: 70
         associativity: right
+        note: "Type-specific: Int64 ** UInt64 -> Int64, Float64 ** (Int64 | Float64) -> Float64."
     bitwise:
       - symbol: "&"
         precedence: 35
@@ -195,10 +197,12 @@
         kind: postfix_only
         precedence: 85
         result_type: Unit
+        note: Integer types only. Not supported on Float types.
       - symbol: "--"
         kind: postfix_only
         precedence: 85
         result_type: Unit
+        note: Integer types only. Not supported on Float types.
     option:
       - symbol: "??"
         role: coalescing
