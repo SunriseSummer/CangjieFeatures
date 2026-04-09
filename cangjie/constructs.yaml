@@ -513,7 +513,7 @@
         note: "~init() — no params/return/generics/mods. At most one. Not in extend."
       - id: sealed_class_same_package
         op: sealed_restriction
-        note: "sealed abstract class: subclasses must be in the same package. sealed implies the sealed type itself is implicitly public and open."
+        note: "sealed abstract class: subclasses must be in the same package. The sealed modifier on the type itself implies public and open semantics (so it can be inherited within the package)."
       - id: this_type
         op: This_type_placeholder
         note: "This type in return position resolves to the actual subclass type at each level."
