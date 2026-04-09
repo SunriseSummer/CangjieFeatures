@@ -1,0 +1,304 @@
+﻿lexer:
+  keywords:
+    type_keywords:
+      - Bool
+      - Rune
+      - Float16
+      - Float32
+      - Float64
+      - Int8
+      - Int16
+      - Int32
+      - Int64
+      - IntNative
+      - UInt8
+      - UInt16
+      - UInt32
+      - UInt64
+      - UIntNative
+      - Array
+      - VArray
+      - String
+      - Nothing
+      - Unit
+    control_flow:
+      - break
+      - case
+      - catch
+      - continue
+      - do
+      - else
+      - finally
+      - for
+      - if
+      - in
+      - match
+      - return
+      - spawn
+      - try
+      - throw
+      - while
+    declaration:
+      - as
+      - abstract
+      - class
+      - const
+      - enum
+      - extend
+      - func
+      - foreign
+      - import
+      - init
+      - interface
+      - let
+      - main
+      - mut
+      - open
+      - operator
+      - override
+      - package
+      - private
+      - prop
+      - protected
+      - public
+      - redef
+      - sealed
+      - static
+      - struct
+      - super
+      - synchronized
+      - this
+      - This
+      - type
+      - unsafe
+      - var
+      - where
+    boolean:
+      - "false"
+      - "true"
+    other:
+      - inout
+      - quote
+
+  delimiters:
+    - "@"
+    - "("
+    - ")"
+    - "{"
+    - "}"
+    - "["
+    - "]"
+    - ","
+    - ":"
+    - ";"
+    - "."
+
+  # Precedence: higher number = higher binding. Based on language spec 0-18 mapping:
+  #   spec 0 (@) = 95, spec 1 (.[]()) = 90, spec 2 (++/--/?) = 85,
+  #   spec 3 (unary !/−) = 80, spec 4 (**) = 70, spec 5 (*/%)" = 65,
+  #   spec 6 (+−) = 60, spec 7 (<</>>) = 55, spec 8 (../..=) = 50,
+  #   spec 9 (</<=/>/>=/ is/as) = 45, spec 10 (==/!=) = 40,
+  #   spec 11 (&) = 35, spec 12 (^) = 33, spec 13 (|) = 30,
+  #   spec 14 (&&) = 25, spec 15 (||) = 20, spec 16 (??) = 15,
+  #   spec 17 (|>/~>) = 10, spec 18 (=/compound) = 5
+  operators:
+    annotation:
+      - symbol: "@"
+        role: annotation_or_highest_precedence
+        precedence: 95
+    member_access:
+      - symbol: "."
+        role: member_access
+        precedence: 90
+    assignment:
+      - symbol: "="
+        role: assignment
+        precedence: 5
+        note: Assignment is a statement, not an expression.
+    type_relations:
+      - symbol: "<:"
+        role: subtype_or_implements
+      - symbol: "->"
+        role: function_type_arrow
+    pattern_and_lambda:
+      - symbol: "=>"
+        role: match_arm_or_lambda_body
+      - symbol: "<-"
+        role: if_let_pattern_bind
+    range:
+      - symbol: ".."
+        role: range_half_open
+        precedence: 50
+      - symbol: "..="
+        role: range_closed
+        precedence: 50
+    logical:
+      - symbol: "&&"
+        role: logical_and
+        precedence: 25
+      - symbol: "||"
+        role: logical_or
+        precedence: 20
+      - symbol: "!"
+        role: logical_not_or_bitwise_not
+        kind: unary_prefix
+        precedence: 80
+    comparison:
+      - symbol: "=="
+        precedence: 40
+      - symbol: "!="
+        precedence: 40
+      - symbol: "<"
+        precedence: 45
+      - symbol: ">"
+        precedence: 45
+      - symbol: "<="
+        precedence: 45
+      - symbol: ">="
+        precedence: 45
+    arithmetic:
+      - symbol: "+"
+        precedence: 60
+        associativity: left
+      - symbol: "-"
+        precedence: 60
+        associativity: left
+        note: Also unary prefix negation at precedence 80.
+      - symbol: "*"
+        precedence: 65
+        associativity: left
+      - symbol: "/"
+        precedence: 65
+        associativity: left
+        note: Integer division truncates toward zero.
+      - symbol: "%"
+        precedence: 65
+        associativity: left
+        note: Only for integer types.
+      - symbol: "**"
+        precedence: 70
+        associativity: right
+    bitwise:
+      - symbol: "&"
+        precedence: 35
+      - symbol: "|"
+        role: bitwise_or_or_enum_case_separator
+        precedence: 30
+      - symbol: "^"
+        precedence: 33
+      - symbol: "<<"
+        precedence: 55
+      - symbol: ">>"
+        precedence: 55
+    increment_decrement:
+      - symbol: "++"
+        kind: postfix_only
+        precedence: 85
+        result_type: Unit
+      - symbol: "--"
+        kind: postfix_only
+        precedence: 85
+        result_type: Unit
+    option:
+      - symbol: "??"
+        role: coalescing
+        precedence: 15
+        note: Short-circuit evaluation; right operand not evaluated if left is Some.
+      - symbol: "?."
+        role: optional_chaining
+        precedence: 85
+        note: Short-circuit; if receiver is None, result is None without evaluating member.
+    pipeline:
+      - symbol: "|>"
+        role: pipe_forward
+        precedence: 10
+        note: "e1 |> e2 desugars to let v = e1; e2(v). e2 must be a function type."
+      - symbol: "~>"
+        role: compose_forward
+        precedence: 10
+        note: "f ~> g = { x => g(f(x)) }. Both must be single-param functions."
+    type_check:
+      - symbol: "is"
+        role: runtime_type_check
+        precedence: 45
+        note: Returns Bool.
+      - symbol: "as"
+        role: safe_downcast_to_option
+        precedence: 45
+        note: Returns Option<T>.
+    compound_assignment:
+      symbols:
+        - "+="
+        - "-="
+        - "*="
+        - "/="
+        - "%="
+        - "**="
+        - "<<="
+        - ">>="
+        - "&="
+        - "|="
+        - "^="
+        - "&&="
+        - "||="
+      precedence: 5
+      note: Same precedence as assignment. These are statements, not expressions.
+
+  identifier:
+    ordinary:
+      pattern: "XID_Start XID_Continue* | '_' XID_Continue+"
+      unicode_standard: "15.0.0"
+      normalized_form: NFC
+      reserved_words_disallowed: true
+    raw:
+      wrapper: "`identifier_or_keyword`"
+      note: Allows using keywords as identifiers when escaped with backticks.
+
+  literals:
+    integer:
+      default_type: Int64
+      supported_prefixes: ["0b", "0B", "0o", "0O", "0x", "0X"]
+      underscore_separator: true
+      supported_suffixes: [i8, i16, i32, i64, u8, u16, u32, u64]
+    float:
+      default_type: Float64
+      decimal_forms: ["3.14", "2e3", "2.4e-1"]
+      hex_forms: ["0x1.1p0", "0x1p2"]
+      hex_exponent_note: Hex floats require p/P exponent (base 2).
+      supported_suffixes: [f16, f32, f64]
+    bool:
+      values: [true, false]
+    rune:
+      prefix: "r"
+      forms: ["r'a'", "r\"b\"", "r'\\n'", "r'\\u{4f60}'"]
+      note: No arithmetic operations on Rune. Convert to UInt32 first.
+    byte:
+      prefix: "b"
+      form: "b'x'"
+      type: UInt8
+      note: "Only ASCII and escape sequences. Unicode escape max 2 hex digits: b'\\u{xx}'."
+    string:
+      forms:
+        - kind: single_line
+          delimiters: ["\"...\"", "'...'"]
+        - kind: multiline
+          delimiters: ["\"\"\"...\"\"\"", "'''...'''"]
+        - kind: raw
+          delimiters: ["#\"...\"#", "#'...'#", "##\"...\"##"]
+          note: Raw strings do not support interpolation or escape sequences.
+      interpolation:
+        syntax: "${expression}"
+        supported_in: [single_line, multiline]
+        not_in: raw
+
+  comments:
+    line:
+      starts_with: "//"
+    block:
+      starts_with: "/*"
+      ends_with: "*/"
+      nesting: true
+
+  whitespace:
+    insignificant_between_tokens: true
+    newline_significant: false
