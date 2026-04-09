@@ -139,6 +139,9 @@
       - id: const_func_can_be_runtime
         op: dual_evaluation
         note: "const func is compile-time if called in const context, runtime otherwise."
+      - id: const_func_in_interface
+        op: const_func_interface_constraint
+        note: "const func can be declared in interfaces. Implementing types must also use const func."
 
   # ========== FUNCTIONS ==========
 
@@ -212,6 +215,9 @@
       - id: captured_var_closure_cannot_escape
         op: escaping_closure_restricted
         note: "Closure capturing a var local cannot be assigned to a variable, returned, or passed as argument. Static/global vars are not captured."
+      - id: transitive_var_capture
+        op: transitive_capture_restriction
+        note: "If function f calls function g that captures an external var (not f's local), f is also treated as capturing that var and cannot escape."
       - id: trailing_lambda_sugar
         op: trailing_lambda
         note: "When last function param is a function type: move lambda outside parens. If only param, parens optional. => optional in trailing position."
@@ -504,7 +510,7 @@
         note: "~init() — no params/return/generics/mods. At most one. Not in extend."
       - id: sealed_class_same_package
         op: sealed_restriction
-        note: "sealed abstract class: subclasses must be same package. sealed implies children are public and open."
+        note: "sealed abstract class: subclasses must be in the same package. sealed implies the sealed type itself is implicitly public and open."
       - id: this_type
         op: This_type_placeholder
         note: "This type in return position resolves to the actual subclass type at each level."
@@ -540,6 +546,9 @@
       - id: primary_constructor
         op: primary_constructor_syntax
         note: "StructName(let x: T, var y: T) {} — same syntax as class primary constructor."
+      - id: static_init
+        op: static_init_block
+        note: "static init() { } — one per struct, inits uninitialized static members, no access mods."
       - id: mut_call_requires_var_binding
         op: mut_method_call_requires_var_binding
       - id: let_binding_blocks_mut_calls

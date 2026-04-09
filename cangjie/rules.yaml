@@ -55,6 +55,12 @@
       severity: info
       message: "for-in on String iterates bytes (UInt8). Use .runes() to iterate characters (Rune)."
 
+    - id: shift_amount_must_be_valid
+      op: shift_operand_constraint
+      applies_to: [shift_left, shift_right]
+      severity: error
+      message: "Shift amount must be non-negative and less than the bit width of the operand type."
+
 lint_rules:
   - id: prefer_explicit_return_for_complex_functions
     op: style_preference
