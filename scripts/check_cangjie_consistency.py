@@ -70,29 +70,60 @@ class ConsistencyChecker:
         self._add("info", file, path, message)
 
     def _load_documents(self) -> None:
-        expected = {
+        expected_top = {
             "index.yaml",
             "language.yaml",
             "lexer.yaml",
             "types.yaml",
-            "constructs.yaml",
             "rules.yaml",
             "learning.yaml",
         }
-        found = {path.name for path in self.root.glob("*.yaml")}
-        missing = sorted(expected - found)
-        extra = sorted(found - expected)
+        found_top = {path.name for path in self.root.glob("*.yaml")}
+        missing = sorted(expected_top - found_top)
+        extra = sorted(found_top - expected_top)
         for name in missing:
             self._error("<workspace>", str(self.root), f"Missing expected YAML file: {name}")
         for name in extra:
             self._warning("<workspace>", str(self.root), f"Unexpected YAML file not referenced by checker: {name}")
 
-        for name in sorted(found):
+        for name in sorted(found_top):
             file_path = self.root / name
             try:
                 self.docs[name] = yaml.safe_load(file_path.read_text(encoding="utf-8"))
             except yaml.YAMLError as exc:
                 self._error(name, "$", f"YAML parse error: {exc}")
+
+        # Load constructs/*.yaml files
+        constructs_dir = self.root / "constructs"
+        self.construct_files: list[str] = []
+        if constructs_dir.is_dir():
+            for file_path in sorted(constructs_dir.glob("*.yaml")):
+                rel_name = f"constructs/{file_path.name}"
+                self.construct_files.append(rel_name)
+                try:
+                    self.docs[rel_name] = yaml.safe_load(file_path.read_text(encoding="utf-8"))
+                except yaml.YAMLError as exc:
+                    self._error(rel_name, "$", f"YAML parse error: {exc}")
+        else:
+            self._error("<workspace>", str(self.root), "Missing expected directory: constructs/")
+
+    def _load_all_constructs(self) -> tuple[list[Any], dict[str, str]]:
+        """Load and merge constructs from all constructs/*.yaml files.
+
+        Returns a tuple of (merged construct list, mapping of construct_id to source file name).
+        """
+        merged: list[Any] = []
+        id_to_file: dict[str, str] = {}
+        for file_name in self.construct_files:
+            doc = self._require_mapping(self.docs.get(file_name, {}), file_name, "$")
+            items = self._require_list(doc.get("constructs", []), file_name, "constructs")
+            for item in items:
+                if isinstance(item, dict):
+                    item_id = item.get("id")
+                    if isinstance(item_id, str):
+                        id_to_file[item_id] = file_name
+            merged.extend(items)
+        return merged, id_to_file
 
     def _doc(self, file_name: str) -> Any:
         return self.docs[file_name]
@@ -205,7 +236,14 @@ class ConsistencyChecker:
         )
 
         loading_order = self._require_list(index.get("loading_order"), "index.yaml", "loading_order")
-        expected_loading_order = [Path(name).stem for name in import_names]
+        expected_loading_order: list[str] = []
+        for name in import_names:
+            p = Path(name)
+            # For paths like "constructs/module.yaml", stem is "constructs/module"
+            if p.parts[:-1]:
+                expected_loading_order.append(str(Path(*p.parts[:-1]) / p.stem))
+            else:
+                expected_loading_order.append(p.stem)
         if loading_order != expected_loading_order:
             self._error(
                 "index.yaml",
@@ -215,23 +253,27 @@ class ConsistencyChecker:
 
         resolution = self._require_mapping(index.get("resolution"), "index.yaml", "resolution")
         for key, value in resolution.items():
-            if not isinstance(value, str) or "#" not in value:
-                self._error("index.yaml", f"resolution.{key}", "Resolution value must be file#/json/pointer")
-                continue
-            file_name, pointer = value.split("#", 1)
-            file_name = file_name.strip()
-            pointer = f"#{pointer}"
-            if file_name not in self.docs:
-                self._error("index.yaml", f"resolution.{key}", f"Unknown resolution file `{file_name}`")
-                continue
-            try:
-                self._resolve_pointer(file_name, pointer)
-            except Exception:
-                self._error(
-                    "index.yaml",
-                    f"resolution.{key}",
-                    f"Could not resolve pointer `{file_name}{pointer}`",
-                )
+            # resolution values can be a single string or a list of strings
+            refs = value if isinstance(value, list) else [value]
+            for ref_index, ref in enumerate(refs):
+                ref_path = f"resolution.{key}" if not isinstance(value, list) else f"resolution.{key}[{ref_index}]"
+                if not isinstance(ref, str) or "#" not in ref:
+                    self._error("index.yaml", ref_path, "Resolution value must be file#/json/pointer")
+                    continue
+                file_name, pointer = ref.split("#", 1)
+                file_name = file_name.strip()
+                pointer = f"#{pointer}"
+                if file_name not in self.docs:
+                    self._error("index.yaml", ref_path, f"Unknown resolution file `{file_name}`")
+                    continue
+                try:
+                    self._resolve_pointer(file_name, pointer)
+                except Exception:
+                    self._error(
+                        "index.yaml",
+                        ref_path,
+                        f"Could not resolve pointer `{file_name}{pointer}`",
+                    )
 
     def _check_types_language_alignment(self) -> None:
         language_doc = self._require_mapping(self._doc("language.yaml"), "language.yaml", "$")
@@ -241,12 +283,11 @@ class ConsistencyChecker:
         types = self._require_list(types_doc.get("types"), "types.yaml", "types")
         rules_doc = self._require_mapping(self._doc("rules.yaml"), "rules.yaml", "$")
         diagnostics = self._require_list(rules_doc.get("diagnostics"), "rules.yaml", "diagnostics")
-        constructs_doc = self._require_mapping(self._doc("constructs.yaml"), "constructs.yaml", "$")
-        constructs = self._require_list(constructs_doc.get("constructs"), "constructs.yaml", "constructs")
+        constructs, _ = self._load_all_constructs()
 
         type_map = self._collect_id_map(types, "types.yaml", "types")
         diagnostic_map = self._collect_id_map(diagnostics, "rules.yaml", "diagnostics")
-        construct_map = self._collect_id_map(constructs, "constructs.yaml", "constructs")
+        construct_map = self._collect_id_map(constructs, "constructs/*", "constructs")
         interface_ids = sorted(type_id for type_id, item in type_map.items() if item.get("kind") == "interface")
         concrete_type_ids = sorted(
             type_id
@@ -327,14 +368,13 @@ class ConsistencyChecker:
                         )
 
     def _check_constructs(self) -> None:
-        constructs_doc = self._require_mapping(self._doc("constructs.yaml"), "constructs.yaml", "$")
-        constructs = self._require_list(constructs_doc.get("constructs"), "constructs.yaml", "constructs")
+        constructs, id_to_file = self._load_all_constructs()
         language_doc = self._require_mapping(self._doc("language.yaml"), "language.yaml", "$")
         symbol_catalog = self._require_mapping(language_doc.get("symbol_catalog"), "language.yaml", "symbol_catalog")
         diagnostics_doc = self._require_mapping(self._doc("rules.yaml"), "rules.yaml", "$")
         diagnostics = self._require_list(diagnostics_doc.get("diagnostics"), "rules.yaml", "diagnostics")
 
-        construct_map = self._collect_id_map(constructs, "constructs.yaml", "constructs")
+        construct_map = self._collect_id_map(constructs, "constructs/*", "constructs")
         construct_ids = set(construct_map)
         nonterminal_ids = {
             item for item in self._require_list(symbol_catalog.get("nonterminals"), "language.yaml", "symbol_catalog.nonterminals")
@@ -343,40 +383,41 @@ class ConsistencyChecker:
         diagnostic_ids = set(self._collect_id_map(diagnostics, "rules.yaml", "diagnostics"))
 
         for construct_id, construct in construct_map.items():
+            src_file = id_to_file.get(construct_id, "constructs/*")
             prerequisites = self._require_list(
                 construct.get("prerequisites", []),
-                "constructs.yaml",
+                src_file,
                 f"constructs.{construct_id}.prerequisites",
             )
             for index, ref in enumerate(prerequisites):
                 if not isinstance(ref, str):
                     self._error(
-                        "constructs.yaml",
+                        src_file,
                         f"constructs.{construct_id}.prerequisites[{index}]",
                         "Prerequisite must be a string",
                     )
                     continue
                 if ref not in construct_ids and ref not in nonterminal_ids:
                     self._error(
-                        "constructs.yaml",
+                        src_file,
                         f"constructs.{construct_id}.prerequisites[{index}]",
                         f"Unknown prerequisite reference `{ref}`",
                     )
 
             syntax = self._require_mapping(
                 construct.get("syntax", {}),
-                "constructs.yaml",
+                src_file,
                 f"constructs.{construct_id}.syntax",
             )
             slots = self._require_list(
                 syntax.get("slots", []),
-                "constructs.yaml",
+                src_file,
                 f"constructs.{construct_id}.syntax.slots",
             )
             for index, slot in enumerate(slots):
                 if not isinstance(slot, dict):
                     self._error(
-                        "constructs.yaml",
+                        src_file,
                         f"constructs.{construct_id}.syntax.slots[{index}]",
                         "Slot must be a mapping",
                     )
@@ -384,26 +425,26 @@ class ConsistencyChecker:
                 ref = slot.get("ref")
                 if isinstance(ref, str) and ref not in nonterminal_ids:
                     self._error(
-                        "constructs.yaml",
+                        src_file,
                         f"constructs.{construct_id}.syntax.slots[{index}].ref",
                         f"Unknown nonterminal reference `{ref}`",
                     )
 
             semantic_rules = self._require_list(
                 construct.get("semantic_rules", []),
-                "constructs.yaml",
+                src_file,
                 f"constructs.{construct_id}.semantic_rules",
             )
             rule_map = self._collect_id_map(
                 semantic_rules,
-                "constructs.yaml",
+                src_file,
                 f"constructs.{construct_id}.semantic_rules",
             )
             for rule_id, rule in rule_map.items():
                 diagnostic = rule.get("diagnostic")
                 if isinstance(diagnostic, str) and diagnostic not in diagnostic_ids:
                     self._error(
-                        "constructs.yaml",
+                        src_file,
                         f"constructs.{construct_id}.semantic_rules.{rule_id}.diagnostic",
                         f"Unknown diagnostic `{diagnostic}`",
                     )
@@ -411,11 +452,11 @@ class ConsistencyChecker:
     def _check_learning(self) -> None:
         learning_doc = self._require_mapping(self._doc("learning.yaml"), "learning.yaml", "$")
         learning = self._require_mapping(learning_doc.get("learning"), "learning.yaml", "learning")
-        constructs_doc = self._require_mapping(self._doc("constructs.yaml"), "constructs.yaml", "$")
+        constructs, _ = self._load_all_constructs()
         rules_doc = self._require_mapping(self._doc("rules.yaml"), "rules.yaml", "$")
         construct_map = self._collect_id_map(
-            self._require_list(constructs_doc.get("constructs"), "constructs.yaml", "constructs"),
-            "constructs.yaml",
+            constructs,
+            "constructs/*",
             "constructs",
         )
         diagnostic_map = self._collect_id_map(
@@ -559,7 +600,7 @@ def parse_args() -> argparse.Namespace:
         "root",
         nargs="?",
         default="cangjie",
-        help="Directory containing index.yaml, language.yaml, lexer.yaml, types.yaml, constructs.yaml, rules.yaml, and learning.yaml.",
+        help="Directory containing index.yaml, language.yaml, lexer.yaml, types.yaml, constructs/*.yaml, rules.yaml, and learning.yaml.",
     )
     return parser.parse_args()
 

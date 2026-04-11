@@ -1,0 +1,50 @@
+constructs:
+
+  - id: extend_decl
+    kind: declaration
+    category: syntax
+    summary: Add functions, properties, operators, and interface implementations to existing types without modifying their definition.
+    syntax:
+      canonical: |
+        extend String {
+            public func printSize(): Unit {
+                println("the size is ${this.size}")
+            }
+        }
+      variants:
+        - |
+          extend<T> Array<T> <: PrintSizeable {
+              public func printSize(): Unit {
+                  println("The size is ${this.size}")
+              }
+          }
+        - |
+          extend Foo<Int64> {
+              public func show(): Unit { println("Foo<Int64>") }
+          }
+    semantic_rules:
+      - id: cannot_add_stored_fields
+        op: disallow_stored_members
+        diagnostic: extend_cannot_add_stored_field
+      - id: cannot_use_open_override_redef
+        op: disallow_modifiers
+        modifiers: [open, override, redef]
+      - id: cannot_access_private_members
+        op: access_level_restriction
+        min_visible: internal
+      - id: generic_extend_params_must_be_used
+        op: all_type_params_referenced
+      - id: orphan_rule
+        op: type_or_interface_must_be_local
+        note: "Extension type OR interface must be in the same package as the extend declaration."
+      - id: only_named_types
+        op: extendable_type_restriction
+        note: "Cannot extend functions, tuples, or interfaces directly."
+      - id: struct_mut_func_in_extend
+        op: mut_in_extend
+        note: "Can add mut func to struct via extend. Same mut restrictions apply."
+      - id: cannot_redefine_existing_members
+        op: no_redefine_in_extend
+      - id: can_add_operators
+        op: operator_in_extend
+        note: "extend can add operator func."

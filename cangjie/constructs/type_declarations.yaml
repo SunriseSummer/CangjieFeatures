@@ -1,0 +1,208 @@
+constructs:
+
+  - id: class_decl
+    kind: declaration
+    category: type
+    summary: Reference type with single inheritance, constructors (init/primary), static init, abstract/sealed variants, and optional finalizer (~init).
+    syntax:
+      canonical: |
+        open class Animal {
+            var name: String
+            public init(name: String) { this.name = name }
+            public open func speak(): Unit { println(name) }
+        }
+      variants:
+        - "abstract class Shape { public func area(): Float64 }"
+        - "sealed abstract class Expr {}"
+        - "class Dog <: Animal { public override func speak(): Unit { println(\"Woof\") } }"
+        - |
+          class Pair {
+              public Pair(let first: Int64, let second: Int64) {}
+          }
+        - |
+          class Res {
+              public init() {}
+              ~init() { println("releasing") }
+          }
+    semantic_rules:
+      - id: top_level_only
+        op: declaration_scope_is
+        expected_scope: top_level
+      - id: single_inheritance
+        op: at_most_one_superclass
+        note: "class B <: A { }. A must be open or abstract. Default parent is Object."
+      - id: override_requires_open_parent
+        op: parent_member_must_be_open
+        note: "Instance: override. Static: redef. Name and param signature must match."
+      - id: primary_constructor
+        op: primary_constructor_syntax
+        note: "Declared inside class body with ClassName as name: class C { public C(let x: T, var y: T) {} }. At most one, creates fields from params. Cannot coexist with this() call."
+      - id: static_init
+        op: static_init_block
+        note: "static init() { } — one per class, inits uninitialized static members, no access mods."
+      - id: init_execution_order
+        op: constructor_order
+        note: "1) Member default values. 2) super()/this() call (first expr in body, mutually exclusive). 3) Constructor body. Implicit super() if parent has parameterless init."
+      - id: static_instance_name_conflict
+        op: member_name_conflict_disallowed
+        diagnostic: duplicate_top_level_symbol
+        note: Same name for static and instance member is not allowed even with different params.
+      - id: non_abstract_satisfies_abstract_members
+        op: abstract_members_satisfied
+        diagnostic: interface_member_not_implemented
+      - id: finalizer_class_cannot_be_open
+        op: has_finalizer_implies_not_open
+        note: "~init() — no params/return/generics/mods. At most one. Not in extend."
+      - id: sealed_class_same_package
+        op: sealed_restriction
+        note: "sealed abstract class: subclasses must be in the same package. The sealed modifier on the type itself implies public and open semantics (so it can be inherited within the package)."
+      - id: this_type
+        op: This_type_placeholder
+        note: "This type in return position resolves to the actual subclass type at each level."
+      - id: auto_generated_init
+        op: default_init
+        note: "public init() auto-generated if all instance members have initializers and no custom constructors defined."
+    prerequisites: [identifier, block_exprs, generic_parameters]
+
+  - id: struct_decl
+    kind: declaration
+    category: type
+    summary: Value type with copy-on-assignment semantics. Supports mut methods. Cannot be recursive.
+    syntax:
+      canonical: |
+        struct Point {
+            var x: Int64 = 0
+            var y: Int64 = 0
+            public mut func move(dx: Int64, dy: Int64): Unit {
+                x += dx
+                y += dy
+            }
+        }
+      variants:
+        - "struct Pair(let first: Int64, let second: Int64) {}"
+    semantic_rules:
+      - id: top_level_only
+        op: declaration_scope_is
+        expected_scope: top_level
+      - id: no_recursive_fields
+        op: recursive_value_type_disallowed
+        diagnostic: struct_recursive_field
+        note: Direct or indirect recursion in value-type fields is forbidden.
+      - id: primary_constructor
+        op: primary_constructor_syntax
+        note: "Declared inside struct body with StructName as name: struct S { public S(let x: T, var y: T) {} }. Same syntax as class primary constructor."
+      - id: static_init
+        op: static_init_block
+        note: "static init() { } — one per struct, inits uninitialized static members, no access mods."
+      - id: mut_call_requires_var_binding
+        op: mut_method_call_requires_var_binding
+      - id: let_binding_blocks_mut_calls
+        op: let_struct_cannot_call_mut
+        diagnostic: let_struct_cannot_call_mut
+      - id: mut_func_restrictions
+        op: mut_method_constraints
+        note: |
+          In mut func: this cannot be captured in lambda or nested function.
+          Cannot return this. Cannot assign this to variable.
+          Instance members cannot be captured by inner lambda in mut func.
+          Non-mut func cannot call mut func on this.
+          mut func cannot be used as first-class value from struct variable (ok from interface variable).
+      - id: copy_on_assignment
+        op: value_semantics
+        note: "Assigning struct copies the value. Modifying copy does not affect original."
+      - id: auto_generated_init
+        op: default_init
+        note: "public init() auto-generated if all members have initializers and no custom constructors."
+    prerequisites: [identifier, block_exprs, generic_parameters]
+
+  - id: interface_decl
+    kind: declaration
+    category: type
+    summary: Behavior contract with implicitly public members. Supports default implementations, sealed variant, interface inheritance, and static members.
+    syntax:
+      canonical: |
+        interface Flyable {
+            func fly(): Unit
+        }
+      variants:
+        - |
+          interface Calculable <: Addable & Subtractable {
+              func mul(other: Int64): Int64
+          }
+        - "sealed interface Shape { func area(): Float64 }"
+        - |
+          interface Printable {
+              func display(): Unit {
+                  println("default display")
+              }
+          }
+    semantic_rules:
+      - id: members_implicitly_public
+        op: disallow_extra_access_modifier
+        note: "All members are implicitly public and open. Access modifiers are not needed."
+      - id: any_is_root_interface
+        op: all_interfaces_inherit_any
+        note: "All interfaces implicitly inherit the built-in Any interface."
+      - id: implementor_must_satisfy_contract
+        op: interface_contract_satisfied
+        diagnostic: interface_member_not_implemented
+      - id: mut_func_struct_must_match
+        op: mut_modifier_match_on_struct
+        note: "Struct implementation must match mut modifier exactly. Class implementation ignores mut."
+      - id: default_implementation
+        op: default_impl_allowed
+        note: "Interface functions can have bodies (default impl). Implementors inherit or override."
+      - id: diamond_default_resolution
+        op: diamond_conflict_resolution
+        note: "When two unrelated parent interfaces provide conflicting defaults, the implementor must resolve explicitly."
+      - id: static_members
+        op: static_in_interface
+        note: "Static members can have default impl. Accessible via interface name (if impl provided) or via type name in generic constraint."
+      - id: implementable_types
+        op: impl_type_restriction
+        note: "Cannot be implemented by Tuple, VArray, or function types."
+    prerequisites: [identifier, block_exprs, generic_parameters]
+
+  - id: enum_decl
+    kind: declaration
+    category: type
+    summary: Tagged union with named constructors, optional payloads, member functions, and properties. No member variables.
+    syntax:
+      canonical: |
+        enum Expr {
+            | Num(Int64)
+            | Add(Expr, Expr)
+            | Neg(Expr)
+        }
+      variants:
+        - "enum Direction { | Up | Down | Left | Right }"
+        - "enum Token { | Number | Plus | ... }"
+    semantic_rules:
+      - id: top_level_only
+        op: declaration_scope_is
+        expected_scope: top_level
+      - id: at_least_one_named_constructor
+        op: minimum_case_count
+        min: 1
+      - id: no_member_variables
+        op: disallow_member_variables
+        note: "Enums cannot have member variables. Only constructors, functions, operators, and properties."
+      - id: same_name_constructor_overloading
+        op: constructor_overload_by_param
+        note: "Constructors can have the same name with different parameter counts."
+      - id: ellipsis_case_must_be_last
+        op: ellipsis_case_last
+        note: "... marks non-exhaustive enum. Match must use _ or binding pattern for remaining cases."
+      - id: member_names_disjoint_from_constructors
+        op: name_sets_disjoint
+        diagnostic: duplicate_top_level_symbol
+      - id: no_default_equatable
+        op: requires_derive_for_equality
+        note: "Use @Derive[Equatable] for == support."
+      - id: recursive_enum_via_payload
+        op: recursive_constructor_allowed
+        note: "Constructor parameters can reference the enum type itself (recursive enum)."
+      - id: constructor_name_no_keyword
+        op: keywords_disallowed_as_constructors
+        note: "Cannot use keywords as constructor names. Use backtick escape or rename."
+    prerequisites: [identifier, generic_parameters]

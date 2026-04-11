@@ -1,0 +1,51 @@
+constructs:
+
+  - id: type_alias
+    kind: declaration
+    category: type
+    summary: Create an alternative name for an existing type. Not a new type.
+    syntax:
+      canonical: "type IntList = ArrayList<Int64>"
+      variants:
+        - "type Callback = (Int64) -> Unit"
+        - "type Pair<A, B> = (A, B)"
+    semantic_rules:
+      - id: top_level_only
+        op: declaration_scope_is
+        expected_scope: top_level
+      - id: no_cyclic_aliases
+        op: acyclic_aliases
+        diagnostic: type_alias_cycle
+      - id: alias_cannot_be_used_for_type_conversion
+        op: disallow_alias_conversion
+        note: "Alias is not a distinct type; cannot be used for conversion expressions."
+      - id: alias_can_have_type_params
+        op: alias_generics
+        note: "type Pair<A, B> = (A, B) is valid. No where constraints on alias."
+      - id: alias_usable_as_constructor
+        op: alias_constructor_access
+        note: "Alias can be used as type name, constructor, static member accessor, and enum constructor accessor."
+
+  - id: type_check_cast
+    kind: expression
+    category: type
+    summary: Runtime type checking (is) and safe downcasting (as) to Option.
+    syntax:
+      canonical: |
+        if (obj is Derived) { println("yes") }
+        let d = obj as Derived
+      variants:
+        - "let n = Int64(someInt32)"
+    semantic_rules:
+      - id: is_returns_bool
+        op: result_type_is
+        type: Bool
+      - id: as_returns_option
+        op: result_type_is
+        type: Option
+      - id: numeric_conversion_via_constructor
+        op: type_constructor_conversion
+        note: "No implicit conversions. Use T(expr) syntax for numeric and Rune conversions. Overflow is compile-time error or runtime exception."
+      - id: rune_conversion_ranges
+        op: rune_convert_restriction
+        note: "Rune(intExpr) valid only for [0x0000, 0xD7FF] and [0xE000, 0x10FFFF]. UInt32(runeExpr) always valid."
