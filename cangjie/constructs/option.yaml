@@ -1,0 +1,38 @@
+constructs:
+
+  - id: option_type
+    kind: expression
+    category: type
+    summary: Option<T> usage patterns including ?T shorthand, ??, ?., getOrThrow, if-let, and while-let.
+    syntax:
+      canonical: |
+        let a: ?Int64 = 100
+        let v = a ?? 0
+        let r = a?.toString()
+      variants:
+        - |
+          if (let Some(v) <- opt) {
+              println(v)
+          }
+        - |
+          while (let Some(item) <- iter.next()) {
+              println(item)
+          }
+        - "let v = opt.getOrThrow()"
+        - "let x: ?Int64 = None"
+    semantic_rules:
+      - id: auto_wrapping_when_context_expects_option
+        op: implicit_some_wrapping
+        note: "When context expects Option<T>, a plain T value is auto-wrapped to Some(T)."
+      - id: coalescing_short_circuits
+        op: short_circuit_evaluation
+        target: "??"
+      - id: optional_chain_short_circuits
+        op: short_circuit_evaluation
+        target: "?."
+        note: "Supports member access, function calls, and subscript: opt?.member, opt?.func(), opt?.[i]."
+      - id: getOrThrow_throws_NoneValueException
+        op: throws_on_none
+      - id: none_explicit_type_hint
+        op: none_disambiguation
+        note: "When type cannot be inferred: None<T> provides explicit type."

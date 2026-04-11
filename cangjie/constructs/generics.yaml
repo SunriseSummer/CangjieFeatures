@@ -1,0 +1,31 @@
+constructs:
+
+  - id: generic_parameters
+    kind: modifier
+    category: type
+    summary: Parameterize functions and named types with type variables and where constraints.
+    syntax:
+      canonical: "func id<T>(value: T): T { value }"
+      variants:
+        - "class Box<T> { let value: T }"
+        - "func printItem<T>(value: T): Unit where T <: ToString { println(value) }"
+        - "interface Container<T> { func get(): T }"
+        - "enum Tree<T> { | Leaf(T) | Node(Tree<T>, Tree<T>) }"
+    semantic_rules:
+      - id: constraint_must_be_class_or_interface
+        op: generic_upper_bound_kind_allowed
+        diagnostic: generic_constraint_invalid
+      - id: multiple_class_bounds_single_chain
+        op: class_upper_bounds_single_inheritance_chain
+        note: "If multiple class upper bounds, they must form a single inheritance chain."
+      - id: user_defined_generics_invariant
+        op: variance_rule
+        mode: invariant
+        note: "For user-defined types, T<A> <: T<B> only if A = B."
+      - id: builtin_variance_exceptions
+        op: builtin_variance
+        note: "Tuple: covariant per element. Function: contravariant params, covariant return."
+      - id: static_members_cannot_reference_type_params
+        op: static_no_type_param
+        note: "Static member type declarations and expressions cannot reference enclosing type parameters."
+    prerequisites: [identifier, type_expr]

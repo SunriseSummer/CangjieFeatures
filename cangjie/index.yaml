@@ -11,7 +11,19 @@ imports:
   - language.yaml
   - lexer.yaml
   - types.yaml
-  - constructs.yaml
+  - constructs/module.yaml
+  - constructs/bindings.yaml
+  - constructs/functions.yaml
+  - constructs/control_flow.yaml
+  - constructs/type_declarations.yaml
+  - constructs/generics.yaml
+  - constructs/type_system.yaml
+  - constructs/extensions.yaml
+  - constructs/option.yaml
+  - constructs/error_handling.yaml
+  - constructs/concurrency.yaml
+  - constructs/annotations.yaml
+  - constructs/cffi.yaml
   - rules.yaml
   - learning.yaml
 
@@ -19,11 +31,36 @@ loading_order:
   - language
   - lexer
   - types
-  - constructs
+  - constructs/module
+  - constructs/bindings
+  - constructs/functions
+  - constructs/control_flow
+  - constructs/type_declarations
+  - constructs/generics
+  - constructs/type_system
+  - constructs/extensions
+  - constructs/option
+  - constructs/error_handling
+  - constructs/concurrency
+  - constructs/annotations
+  - constructs/cffi
   - rules
   - learning
 
 resolution:
   symbol_catalog: language.yaml#/symbol_catalog
-  constructs: constructs.yaml#/constructs
+  constructs:
+    - constructs/module.yaml#/constructs
+    - constructs/bindings.yaml#/constructs
+    - constructs/functions.yaml#/constructs
+    - constructs/control_flow.yaml#/constructs
+    - constructs/type_declarations.yaml#/constructs
+    - constructs/generics.yaml#/constructs
+    - constructs/type_system.yaml#/constructs
+    - constructs/extensions.yaml#/constructs
+    - constructs/option.yaml#/constructs
+    - constructs/error_handling.yaml#/constructs
+    - constructs/concurrency.yaml#/constructs
+    - constructs/annotations.yaml#/constructs
+    - constructs/cffi.yaml#/constructs
   diagnostics: rules.yaml#/diagnostics
