@@ -79,7 +79,7 @@
       - quote
     contextual_modifiers:
       - sealed
-      - note: "sealed is not a reserved keyword; it can be used as an identifier. It acts as a modifier before abstract class and interface declarations (e.g. sealed abstract class, sealed interface)."
+      - note: "Acts as a modifier before abstract class and interface declarations (e.g. sealed abstract class, sealed interface). Can be used as an identifier in other contexts."
     builtin_type_names:
       - Array
       - String
@@ -215,7 +215,7 @@
       - symbol: "?"
         role: optional_chaining_prefix
         precedence: 85
-        note: "Postfix ? combines with member/subscript/call/trailing-lambda: expr?.id, expr?[i], expr?(arg), expr?{lambda}. Short-circuit: if receiver is None, result is None without evaluating the rest."
+        note: "Optional chaining operator ? combines with member/subscript/call/trailing-lambda: expr?.id, expr?[i], expr?(arg), expr?{lambda}. Short-circuit: if receiver is None, result is None without evaluating the rest."
     pipeline:
       - symbol: "|>"
         role: pipe_forward
