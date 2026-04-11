@@ -212,10 +212,10 @@
         role: coalescing
         precedence: 15
         note: Short-circuit evaluation; right operand not evaluated if left is Some.
-      - symbol: "?."
-        role: optional_chaining
+      - symbol: "?"
+        role: optional_chaining_prefix
         precedence: 85
-        note: Short-circuit; if receiver is None, result is None without evaluating member.
+        note: "Postfix ? combines with member/subscript/call/trailing-lambda: expr?.id, expr?[i], expr?(arg), expr?{lambda}. Short-circuit: if receiver is None, result is None without evaluating the rest."
     pipeline:
       - symbol: "|>"
         role: pipe_forward

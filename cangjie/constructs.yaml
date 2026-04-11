@@ -500,7 +500,7 @@
         note: "Instance: override. Static: redef. Name and param signature must match."
       - id: primary_constructor
         op: primary_constructor_syntax
-        note: "Declared inside class body with ClassName as name: class C { public C(let x: T, var y: T) {} }. At most one, creates fields from params. Cannot coexist with this() call."
+        note: "Declared inside class body with ClassName as name: class C { public C(let x: T, var y: T) {} }. At most one, creates fields from params. Can use super(args) but cannot coexist with this() call."
       - id: static_init
         op: static_init_block
         note: "static init() { } — one per class, inits uninitialized static members, no access mods."
@@ -664,8 +664,8 @@
         op: name_sets_disjoint
         diagnostic: duplicate_top_level_symbol
       - id: no_default_equatable
-        op: requires_derive_for_equality
-        note: "Use @Derive[Equatable] for == support."
+        op: requires_manual_operator
+        note: "Enums do not support == by default. Implement operator func ==(rhs: EnumType): Bool manually or use match-based comparison."
       - id: recursive_enum_via_payload
         op: recursive_constructor_allowed
         note: "Constructor parameters can reference the enum type itself (recursive enum)."
@@ -841,7 +841,7 @@
       - id: optional_chain_short_circuits
         op: short_circuit_evaluation
         target: "?."
-        note: "Supports member access, function calls, and subscript: opt?.member, opt?.func(), opt?.[i]."
+        note: "Supports member access, function calls, subscript, and trailing lambda: opt?.member, opt?.func(), opt?[i], opt?{lambda}."
       - id: getOrThrow_throws_NoneValueException
         op: throws_on_none
       - id: none_explicit_type_hint
