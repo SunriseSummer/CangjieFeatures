@@ -1,0 +1,152 @@
+constructs:
+- id: if_expr
+  kind: expression
+  category: control
+  summary: Conditional expression. Value is the last expression of the executed branch.
+  syntax:
+    canonical: |
+      if (x > 0) {
+          "positive"
+      } else {
+          "non-positive"
+      }
+    variants:
+    - |
+      if (let Some(v) <- opt) {
+          println(v)
+      }
+    - |
+      if (let Some(v) <- opt && v > 0) {
+          println(v)
+      }
+  semantic_rules:
+  - id: condition_must_be_bool
+    op: expression_type_is
+    expected_type: Bool
+    diagnostic: if_condition_not_bool
+  - id: without_else_returns_unit
+    op: infer_result_type
+    when: else_absent
+    result_type: Unit
+  - id: with_else_type_is_common_parent
+    op: infer_result_type
+    when: else_present
+    result_type: common_parent_of_branches
+  - id: if_let_binds_in_then_branch_only
+    op: pattern_binding_scope
+    note: Binding variables from if-let are only visible in the then branch, not in else.
+  - id: if_let_logical_ops
+    op: if_let_conditions
+    note: '&& right side can be Bool or another let pattern. || patterns cannot have variable bindings (only _ allowed).'
+  prerequisites: [expression, block_exprs, pattern]
+- id: while_loop
+  kind: expression
+  category: control
+  summary: Pre-condition and post-condition loops. Return type is always Unit.
+  syntax:
+    canonical: |
+      while (cond) {
+          exprs
+      }
+    variants:
+    - |
+      do {
+          exprs
+      } while (cond)
+    - |
+      while (let Some(v) <- iter.next()) {
+          println(v)
+      }
+  semantic_rules:
+  - id: condition_must_be_bool
+    op: expression_type_is
+    expected_type: Bool
+    diagnostic: while_condition_not_bool
+  - id: loop_returns_unit
+    op: result_type_is
+    type: Unit
+  - id: break_continue_supported
+    op: loop_control
+    note: break exits loop; continue skips to next iteration. Both have type Nothing.
+- id: for_in_loop
+  kind: expression
+  category: control
+  summary: Iterate over Iterable sources with optional destructuring and where filtering. Returns Unit.
+  syntax:
+    canonical: |
+      for (i in 0..=10 where i % 2 == 0) {
+          println(i)
+      }
+    variants: ['for ((k, v) in pairs) { println(k) }', 'for (_ in 0..5) { println("tick") }']
+  semantic_rules:
+  - id: source_must_be_iterable
+    op: expression_implements_interface
+    expected_interface: Iterable
+    diagnostic: for_in_requires_iterable
+  - id: source_evaluated_once
+    op: single_evaluation
+    note: Source expression evaluated once; then iterator() called; loop calls next() until None.
+  - id: where_must_be_bool
+    op: expression_type_is
+    expected_type: Bool
+    when: filter_present
+  - id: iteration_variable_is_immutable
+    op: binding_is_let
+    note: Iteration variable cannot be modified (compile error if attempted).
+  - id: break_continue_supported
+    op: loop_control
+    note: break exits loop; continue skips to next iteration.
+  - id: returns_unit
+    op: result_type_is
+    type: Unit
+  - id: string_iterates_bytes
+    op: string_iteration_note
+    note: for (b in str) iterates UInt8 bytes (UTF-8). Use for (r in str.runes()) for Rune characters.
+  prerequisites: [pattern, expression, block_exprs]
+- id: match_expr
+  kind: expression
+  category: control
+  summary: Pattern matching expression with exhaustive coverage. First matching case wins.
+  syntax:
+    canonical: |
+      match (value) {
+          case Some(x) => x
+          case None => 0
+      }
+    variants:
+    - |
+      match {
+          case x > 0 => "positive"
+          case _ => "non-positive"
+      }
+    - |
+      match (value) {
+          case x where x > 0 => "positive"
+          case _ => "other"
+      }
+  semantic_rules:
+  - id: case_order_significant
+    op: first_matching_case_wins
+  - id: must_be_exhaustive
+    op: cases_exhaustive
+    diagnostic: match_not_exhaustive
+  - id: guard_uses_where_keyword
+    op: guard_syntax
+    note: Guard syntax is 'case pattern where condition =>', not 'if'. Condition must be Bool.
+  - id: case_body_no_braces
+    op: case_body_is_bare_exprs
+    note: => is followed by exprs directly, not wrapped in {}.
+  - id: result_type_is_common_parent
+    op: infer_result_type
+    note: Match expression type = common parent type of all case body types.
+  - id: no_fallthrough
+    op: single_case_execution
+    note: Only the first matching case is executed; no fall-through to subsequent cases.
+  pattern_kinds:
+  - constant_pattern: Numeric, Bool, Rune, String (no interpolation), Unit literals
+  - wildcard_pattern: _ matches anything
+  - binding_pattern: id binds value to immutable variable (scoped to case)
+  - tuple_pattern: (p1, p2, ...) destructures tuples
+  - type_pattern: 'id: Type or _: Type for runtime type check'
+  - enum_pattern: Constructor or Constructor(p1, ...) for enum matching
+  prerequisites: [expression, pattern]

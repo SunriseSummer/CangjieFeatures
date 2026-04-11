@@ -1,0 +1,50 @@
+constructs:
+- id: struct_decl
+  kind: declaration
+  category: type
+  summary: Value type with copy-on-assignment semantics. Supports mut methods. Cannot be recursive.
+  syntax:
+    canonical: |
+      struct Point {
+          var x: Int64 = 0
+          var y: Int64 = 0
+          public mut func move(dx: Int64, dy: Int64): Unit {
+              x += dx
+              y += dy
+          }
+      }
+    variants: ['struct Pair(let first: Int64, let second: Int64) {}']
+  semantic_rules:
+  - id: top_level_only
+    op: declaration_scope_is
+    expected_scope: top_level
+  - id: no_recursive_fields
+    op: recursive_value_type_disallowed
+    diagnostic: struct_recursive_field
+    note: Direct or indirect recursion in value-type fields is forbidden.
+  - id: primary_constructor
+    op: primary_constructor_syntax
+    note: 'Declared inside struct body with StructName as name: struct S { public S(let x: T, var y: T) {} }. Same syntax as class primary constructor.'
+  - id: static_init
+    op: static_init_block
+    note: static init() { } — one per struct, inits uninitialized static members, no access mods.
+  - id: mut_call_requires_var_binding
+    op: mut_method_call_requires_var_binding
+  - id: let_binding_blocks_mut_calls
+    op: let_struct_cannot_call_mut
+    diagnostic: let_struct_cannot_call_mut
+  - id: mut_func_restrictions
+    op: mut_method_constraints
+    note: |
+      In mut func: this cannot be captured in lambda or nested function.
+      Cannot return this. Cannot assign this to variable.
+      Instance members cannot be captured by inner lambda in mut func.
+      Non-mut func cannot call mut func on this.
+      mut func cannot be used as first-class value from struct variable (ok from interface variable).
+  - id: copy_on_assignment
+    op: value_semantics
+    note: Assigning struct copies the value. Modifying copy does not affect original.
+  - id: auto_generated_init
+    op: default_init
+    note: public init() auto-generated if all members have initializers and no custom constructors.
+  prerequisites: [identifier, block_exprs, generic_parameters]

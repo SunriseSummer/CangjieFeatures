@@ -1,0 +1,48 @@
+constructs:
+- id: interface_decl
+  kind: declaration
+  category: type
+  summary: Behavior contract with implicitly public members. Supports default implementations, sealed variant, interface inheritance, and static members.
+  syntax:
+    canonical: |
+      interface Flyable {
+          func fly(): Unit
+      }
+    variants:
+    - |
+      interface Calculable <: Addable & Subtractable {
+          func mul(other: Int64): Int64
+      }
+    - 'sealed interface Shape { func area(): Float64 }'
+    - |
+      interface Printable {
+          func display(): Unit {
+              println("default display")
+          }
+      }
+  semantic_rules:
+  - id: members_implicitly_public
+    op: disallow_extra_access_modifier
+    note: All members are implicitly public and open. Access modifiers are not needed.
+  - id: any_is_root_interface
+    op: all_interfaces_inherit_any
+    note: All interfaces implicitly inherit the built-in Any interface.
+  - id: implementor_must_satisfy_contract
+    op: interface_contract_satisfied
+    diagnostic: interface_member_not_implemented
+  - id: mut_func_struct_must_match
+    op: mut_modifier_match_on_struct
+    note: Struct implementation must match mut modifier exactly. Class implementation ignores mut.
+  - id: default_implementation
+    op: default_impl_allowed
+    note: Interface functions can have bodies (default impl). Implementors inherit or override.
+  - id: diamond_default_resolution
+    op: diamond_conflict_resolution
+    note: When two unrelated parent interfaces provide conflicting defaults, the implementor must resolve explicitly.
+  - id: static_members
+    op: static_in_interface
+    note: Static members can have default impl. Accessible via interface name (if impl provided) or via type name in generic constraint.
+  - id: implementable_types
+    op: impl_type_restriction
+    note: Cannot be implemented by Tuple, VArray, or function types.
+  prerequisites: [identifier, block_exprs, generic_parameters]

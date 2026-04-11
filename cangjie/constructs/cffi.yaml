@@ -1,0 +1,65 @@
+constructs:
+- id: cffi
+  kind: declaration
+  category: interop
+  summary: Interoperate with C via foreign declarations, unsafe blocks, CPointer, CFunc, @C struct, inout, and calling conventions.
+  syntax:
+    canonical: |
+      foreign func rand(): Int32
+
+      main() {
+          let r = unsafe { rand() }
+          println(r)
+      }
+    variants:
+    - |
+      foreign {
+          func malloc(size: UIntNative): CPointer<Unit>
+          func free(ptr: CPointer<Unit>): Unit
+      }
+    - |
+      @C
+      struct Point {
+          var x: Int64 = 0
+          var y: Int64 = 0
+      }
+    - |
+      @C
+      func callback(p: CPointer<Int8>): Unit {
+          println("from C")
+      }
+    - unsafe { f(inout n) }
+    - 'foreign func printf(fmt: CPointer<UInt8>, ...): Int32'
+  semantic_rules:
+  - id: foreign_func_params_must_be_ctype
+    op: type_constraint_check
+    constraint: CType
+    diagnostic: foreign_param_not_ctype
+  - id: foreign_call_requires_unsafe
+    op: context_required
+    context: unsafe
+    diagnostic: unsafe_context_required
+    note: unsafe does not propagate into lambdas inside the unsafe block — those need their own unsafe.
+  - id: c_struct_no_interfaces_no_generics
+    op: disallow_features_on_c_struct
+    disallowed: [interface_impl, generic_params, closure_capture]
+    note: '@C struct members must be CType only. Memory layout is C-compatible.'
+  - id: inout_only_for_cfunc_call
+    op: inout_usage_restricted
+    note: inout only on var bindings (stack variables) at CFunc call site. Not for class member fields.
+  - id: calling_convention
+    op: annotation_values
+    values: [CDECL, STDCALL]
+    note: '@CallingConv[CDECL] (default) or @CallingConv[STDCALL] (Windows API). Applies to foreign blocks, functions, or top-level CFunc.'
+  - id: foreign_varargs
+    op: c_varargs_support
+    note: foreign func can have ... as last parameter for C variadic functions.
+  - id: varray_in_cffi
+    op: varray_cffi_usage
+    note: VArray<T, $N> can be used in @C struct. As function params, pass via inout (converts to CPointer<T>).
+  - id: cstring_lifecycle
+    op: cstring_alloc_free
+    note: Create via LibC.mallocCString(str). Free via LibC.free(cstr). Or use asResource() with try-with-resources.
+  - id: memory_management
+    op: cffi_memory
+    note: LibC.malloc<T>(count), LibC.free<T>(ptr). CPointerResource/CStringResource for auto-management. acquireArrayRawData/releaseArrayRawData for zero-copy Array access.

@@ -1,0 +1,42 @@
+constructs:
+- id: enum_decl
+  kind: declaration
+  category: type
+  summary: Tagged union with named constructors, optional payloads, member functions, and properties. No member variables.
+  syntax:
+    canonical: |
+      enum Expr {
+          | Num(Int64)
+          | Add(Expr, Expr)
+          | Neg(Expr)
+      }
+    variants: ['enum Direction { | Up | Down | Left | Right }', 'enum Token { | Number | Plus | ... }']
+  semantic_rules:
+  - id: top_level_only
+    op: declaration_scope_is
+    expected_scope: top_level
+  - id: at_least_one_named_constructor
+    op: minimum_case_count
+    min: 1
+  - id: no_member_variables
+    op: disallow_member_variables
+    note: Enums cannot have member variables. Only constructors, functions, operators, and properties.
+  - id: same_name_constructor_overloading
+    op: constructor_overload_by_param
+    note: Constructors can have the same name with different parameter counts.
+  - id: ellipsis_case_must_be_last
+    op: ellipsis_case_last
+    note: '... marks non-exhaustive enum. Match must use _ or binding pattern for remaining cases.'
+  - id: member_names_disjoint_from_constructors
+    op: name_sets_disjoint
+    diagnostic: duplicate_top_level_symbol
+  - id: no_default_equatable
+    op: requires_derive_for_equality
+    note: Use @Derive[Equatable] for == support.
+  - id: recursive_enum_via_payload
+    op: recursive_constructor_allowed
+    note: Constructor parameters can reference the enum type itself (recursive enum).
+  - id: constructor_name_no_keyword
+    op: keywords_disallowed_as_constructors
+    note: Cannot use keywords as constructor names. Use backtick escape or rename.
+  prerequisites: [identifier, generic_parameters]

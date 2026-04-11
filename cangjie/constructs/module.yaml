@@ -1,0 +1,74 @@
+constructs:
+- id: package_unit
+  kind: declaration
+  category: module
+  summary: Declare a package and import visible symbols before other declarations.
+  syntax:
+    canonical: |
+      package default.network.http
+      import std.collection.*
+    variants: ['import pkg.{A, B}', import pkg.name as alias, public import sub.f, 'import {pkg1.*, pkg2.*}']
+    slots:
+    - name: package_name
+      ref: package_path
+    - name: imports
+      ref: import_path
+  semantic_rules:
+  - id: package_decl_is_first_non_comment_line
+    op: declaration_order
+    diagnostic: package_must_be_first
+  - id: package_path_matches_source_layout
+    op: package_matches_path
+    diagnostic: package_path_mismatch
+  - id: imports_precede_other_declarations
+    op: import_section_before_declarations
+    diagnostic: import_before_declarations
+  - id: no_circular_package_imports
+    op: acyclic_imports
+  - id: local_names_shadow_imports
+    op: local_over_imported
+    note: Local declaration shadows imported name, except for function overloading.
+  - id: access_modifiers_on_top_level
+    op: access_modifier_levels
+    levels: [private_file, internal_default, protected_module, public_global]
+  - id: subpackage_no_same_name_as_top_level_decl
+    op: name_disjoint_with_subpackage
+  prerequisites: [package_path, import_path, access_modifier]
+- id: main_entry
+  kind: declaration
+  category: module
+  summary: The program entry point. Defined without func keyword. At most one per root package.
+  syntax:
+    canonical: |
+      main(): Int64 {
+          return 0
+      }
+    variants:
+    - |
+      main(args: Array<String>): Unit {
+          for (arg in args) { println(arg) }
+      }
+  semantic_rules:
+  - id: main_no_func_keyword
+    op: keyword_absent
+    keyword: func
+  - id: main_no_access_modifier
+    op: disallow_access_modifier
+  - id: main_param_type_restricted
+    op: param_type_one_of
+    allowed: [none, Array<String>]
+  - id: main_return_type_restricted
+    op: return_type_one_of
+    allowed:
+    - Unit
+    - Int64
+    - Int32
+    - Int16
+    - Int8
+    - UInt8
+    - UInt16
+    - UInt32
+    - UInt64
+  - id: at_most_one_main_per_root_package
+    op: unique_in_scope
+    scope: root_package

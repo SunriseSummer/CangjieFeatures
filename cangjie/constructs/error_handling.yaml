@@ -1,0 +1,50 @@
+constructs:
+- id: error_handling
+  kind: expression
+  category: control
+  summary: Exception-based error handling with throw, try/catch/finally, and try-with-resources.
+  syntax:
+    canonical: |
+      try {
+          throw IllegalArgumentException("bad input")
+      } catch (e: IllegalArgumentException) {
+          println(e.message)
+      } finally {
+          println("cleanup")
+      }
+    variants:
+    - |
+      try (r = Worker("Tom")) {
+          r.work()
+      }
+    - 'catch (e: E1 | E2) { println(e) }'
+    - catch (_) { println("unknown") }
+  semantic_rules:
+  - id: throw_only_exception_subtypes
+    op: expression_type_is
+    expected_type: Exception
+    diagnostic: throw_requires_exception_subtype
+    note: Cannot throw Error or its subclasses. throw type is Nothing.
+  - id: try_with_resources_requires_Resource_interface
+    op: expression_implements_interface
+    expected_interface: Resource
+    note: 'Syntax: try (var = resourceExpr) { body }. Resources comma-separated. Auto-closes if isClosed() is false.'
+  - id: try_with_resources_returns_unit
+    op: result_type_is
+    type: Unit
+    when: try_with_resources
+  - id: finally_always_executes
+    op: guaranteed_execution
+    note: Finally block runs on normal exit, throw, break, continue, or return.
+  - id: catch_pattern_order_matters
+    op: first_matching_catch_wins
+  - id: catch_union_pattern
+    op: catch_union_syntax
+    note: 'catch (e: E1 | E2 | E3) binds e to the common parent type.'
+  - id: custom_exception_extends_Exception_only
+    op: inheritance_restricted_to
+    base: Exception
+    note: Cannot extend Error or its subclasses.
+  - id: try_expr_type
+    op: try_result_type
+    note: try expression type = common parent of try block + all catch blocks (finally excluded).

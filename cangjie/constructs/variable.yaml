@@ -1,0 +1,66 @@
+constructs:
+- id: variable_decl
+  kind: declaration
+  category: syntax
+  summary: Declare immutable (let), mutable (var), or compile-time constant (const) bindings with optional type annotation.
+  syntax:
+    canonical: 'let x: Int64 = 1'
+    variants: [var count = 0, const PI = 3.14, 'let (a, b) = (1, 2)']
+  semantic_rules:
+  - id: const_requires_initializer
+    op: initializer_required_for_modifier
+    target: const
+    diagnostic: local_variable_uninitialized
+  - id: global_and_static_must_initialize
+    op: initializer_required_in_scope
+    target: [global_variable, static_variable]
+  - id: type_annotation_or_initializer_required
+    op: type_or_initializer_required
+  - id: let_value_type_prevents_all_mutation
+    op: let_value_semantics
+    note: let on a value type (struct, primitive) prevents any mutation including mut method calls.
+  - id: let_reference_type_prevents_reassignment_only
+    op: let_reference_semantics
+    note: let on a reference type (class) prevents reassignment but allows mutating members.
+  - id: tuple_destructuring_in_let
+    op: irrefutable_pattern_binding
+    note: let (a, b) = expr destructures tuples. Pattern must be irrefutable.
+  prerequisites: [identifier, type_expr, expression, pattern]
+- id: const_decl
+  kind: declaration
+  category: syntax
+  summary: Compile-time constant expressions, const functions, and const init for struct/class.
+  syntax:
+    canonical: const G = 6.674e-11
+    variants:
+    - |
+      const func distance(a: Float64, b: Float64): Float64 {
+          let dx = a - b
+          if (dx >= 0.0) { dx } else { -dx }
+      }
+    - |
+      struct Point {
+          const Point(let x: Float64, let y: Float64) {}
+      }
+  semantic_rules:
+  - id: const_func_body_all_const_exprs
+    op: all_expressions_are_const
+    note: 'Const exprs: literals, const vars, const func calls, arithmetic/relational/bitwise on const operands, if/match/is/as with const internals, member access (no props), tuple index, this/super in
+      const init.'
+  - id: const_array_literal_is_varray
+    op: const_array_literal_type
+    note: An all-const array literal is permitted in const context only as a VArray-style constant value, not as runtime Array<T>.
+  - id: const_func_no_var_locals
+    op: disallow_var_in_const_func
+    note: Only let and const locals inside const func body.
+  - id: const_init_only_assignment_to_fields
+    op: const_init_restricted_side_effects
+    note: 'const init body: only simple field assignments (=). Class const init requires parent const init call. No var members in const-init class.'
+  - id: const_not_in_extend
+    op: disallow_const_in_extend
+  - id: const_func_can_be_runtime
+    op: dual_evaluation
+    note: const func is compile-time if called in const context, runtime otherwise.
+  - id: const_func_in_interface
+    op: const_func_interface_constraint
+    note: const func can be declared in interfaces. Implementing types must also use const func.

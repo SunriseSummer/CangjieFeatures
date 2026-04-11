@@ -94,6 +94,56 @@ class ConsistencyChecker:
             except yaml.YAMLError as exc:
                 self._error(name, "$", f"YAML parse error: {exc}")
 
+        self._load_split_constructs()
+
+    def _load_split_constructs(self) -> None:
+        """Load split construct files when constructs.yaml is a manifest with constructs_dir."""
+        constructs_doc = self.docs.get("constructs.yaml")
+        if not isinstance(constructs_doc, dict):
+            return
+        constructs_dir_name = constructs_doc.get("constructs_dir")
+        constructs_files = constructs_doc.get("constructs_files")
+        if not isinstance(constructs_dir_name, str) or not isinstance(constructs_files, list):
+            return
+
+        constructs_dir = self.root / constructs_dir_name
+        if not constructs_dir.is_dir():
+            self._error("constructs.yaml", "constructs_dir", f"Directory not found: {constructs_dir}")
+            return
+
+        merged: list[Any] = []
+        for filename in constructs_files:
+            if not isinstance(filename, str):
+                self._error("constructs.yaml", "constructs_files", f"Expected string filename, got {type(filename).__name__}")
+                continue
+            file_path = constructs_dir / filename
+            if not file_path.exists():
+                self._error("constructs.yaml", "constructs_files", f"Missing construct file: {file_path}")
+                continue
+            try:
+                doc = yaml.safe_load(file_path.read_text(encoding="utf-8"))
+            except yaml.YAMLError as exc:
+                self._error(f"constructs/{filename}", "$", f"YAML parse error: {exc}")
+                continue
+            if not isinstance(doc, dict) or "constructs" not in doc:
+                self._error(f"constructs/{filename}", "$", "Expected mapping with 'constructs' key")
+                continue
+            items = doc["constructs"]
+            if not isinstance(items, list):
+                self._error(f"constructs/{filename}", "constructs", f"Expected list, got {type(items).__name__}")
+                continue
+            merged.extend(items)
+
+        # Check for unexpected files in constructs directory
+        expected_files = {str(f) for f in constructs_files if isinstance(f, str)}
+        actual_files = {p.name for p in constructs_dir.glob("*.yaml")}
+        extra_files = sorted(actual_files - expected_files)
+        for name in extra_files:
+            self._warning("constructs.yaml", "constructs_files", f"Unexpected file in constructs/: {name}")
+
+        # Replace the manifest doc with a virtual merged document
+        self.docs["constructs.yaml"] = {"constructs": merged}
+
     def _doc(self, file_name: str) -> Any:
         return self.docs[file_name]
 
@@ -559,7 +609,7 @@ def parse_args() -> argparse.Namespace:
         "root",
         nargs="?",
         default="cangjie",
-        help="Directory containing index.yaml, language.yaml, lexer.yaml, types.yaml, constructs.yaml, rules.yaml, and learning.yaml.",
+        help="Directory containing index.yaml, language.yaml, lexer.yaml, types.yaml, constructs.yaml (manifest), constructs/, rules.yaml, and learning.yaml.",
     )
     return parser.parse_args()
 

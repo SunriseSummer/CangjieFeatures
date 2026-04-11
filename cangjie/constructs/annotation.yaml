@@ -1,0 +1,49 @@
+constructs:
+- id: annotation_decl
+  kind: declaration
+  category: meta
+  summary: Define and use annotations with @Annotation, and access type info via reflection at runtime.
+  syntax:
+    canonical: |
+      @Annotation
+      public class Version {
+          let code: String
+          const init(code: String) { this.code = code }
+      }
+
+      @Version["1.0"]
+      class MyService {}
+    variants:
+    - '@OverflowWrapping func wrap(): Int8 { Int8(200) }'
+    - '@OverflowSaturating func sat(): Int8 { Int8(-200) }'
+    - '@Annotation[target: [MemberFunction]] public class FuncOnly { const init() {} }'
+    - |
+      let info = TypeInfo.of(obj)
+      let v = info.getInstanceVariable("name")
+  semantic_rules:
+  - id: annotation_class_must_have_const_init
+    op: requires_const_init
+  - id: annotation_class_not_abstract_open_sealed
+    op: disallow_modifiers
+    modifiers: [abstract, open, sealed]
+  - id: same_annotation_not_applied_twice
+    op: unique_annotation_per_target
+  - id: annotations_not_inherited
+    op: no_inheritance_of_annotations
+    note: Subclass does not inherit parent's annotations.
+  - id: annotation_target_restriction
+    op: target_kind_check
+    diagnostic: annotation_target_mismatch
+    note: 'Restrict via @Annotation[target: [Type, ...]].'
+  - id: annotation_kinds
+    op: annotation_kind_enum
+    values: [Type, Parameter, Init, MemberProperty, MemberFunction, MemberVariable]
+  - id: reflection_only_sees_public_members
+    op: visibility_restriction
+    min_visible: public
+  - id: overflow_annotations
+    op: overflow_behavior
+    note: '@OverflowThrowing (default, throw on overflow), @OverflowWrapping (truncate), @OverflowSaturating (clamp). Apply to function decl.'
+  - id: reflection_no_uninstantiated_generics
+    op: typeinfo_restriction
+    note: Cannot get TypeInfo of uninstantiated generic types.

@@ -1,0 +1,62 @@
+constructs:
+- id: concurrency
+  kind: expression
+  category: concurrency
+  summary: M:N user-space threading with spawn, Future, Mutex, Condition, synchronized, atomic operations, ThreadLocal, sleep(Duration), and std.sync coordination utilities.
+  syntax:
+    canonical: |
+      let f = spawn { =>
+          heavyComputation()
+      }
+      let result = f.get()
+    variants:
+    - |
+      synchronized(mtx) {
+          sharedData += 1
+      }
+    - |
+      let counter = AtomicInt64(0)
+      counter.fetchAdd(1)
+    - let tl = ThreadLocal<String>()
+    - sleep(Duration.second)
+  semantic_rules:
+  - id: spawn_takes_no_arg_lambda
+    op: lambda_param_count
+    count: 0
+  - id: spawn_returns_future
+    op: result_type_is
+    type: Future
+  - id: main_exit_kills_spawned_threads
+    op: thread_lifetime_warning
+    note: Spawned threads are killed when main returns. Use Future.get() to wait.
+  - id: mutex_is_reentrant
+    op: reentrant_lock
+    note: Mutex is reentrant for the same thread. unlock() without lock throws IllegalSynchronizationStateException.
+  - id: mutex_condition_requires_lock
+    op: condition_created_under_lock
+    note: mutex.condition() must be called while holding the lock.
+  - id: condition_wait_in_loop
+    op: spurious_wakeup_pattern
+    note: Use waitUntil(predicate) or loop with wait() + predicate check for spurious wakeups.
+  - id: synchronized_auto_unlock
+    op: synchronized_scoped
+    note: synchronized(mtx) { ... } auto-locks on enter, auto-unlocks on exit (including break/continue/return/throw).
+  - id: cancel_is_cooperative
+    op: cooperative_cancellation
+    note: Future.cancel() sends a request; thread must check Thread.currentThread.hasPendingCancellation.
+  - id: atomic_operations
+    op: atomic_api
+    note: Atomics include AtomicInt*/UInt*, AtomicBool, AtomicReference<T>, and AtomicOptionReference<T>. All support load, store, swap, compareAndSwap. Integer atomics also support fetchAdd, fetchSub,
+      fetchAnd, fetchOr, fetchXor. All return the pre-modify value.
+  - id: sync_counter
+    op: sync_counter_api
+    note: 'SyncCounter: dec() decrements, waitUntilZero() blocks until zero. For coordinating N threads.'
+  - id: sleep_function
+    op: sleep_api
+    note: 'sleep(Duration): blocks current thread at least dur. dur <= Zero just yields.'
+  - id: timer_api
+    op: timer_primitives
+    note: Timer.once(delay, task) and Timer.repeat(delay, interval, task) return Timer. timer.cancel() stops future invocations.
+  - id: extra_sync_primitives
+    op: coordination_primitives
+    note: std.sync also provides Barrier, Semaphore, and ReadWriteLock for phased coordination or bounded concurrency.

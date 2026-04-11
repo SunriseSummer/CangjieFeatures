@@ -1,0 +1,64 @@
+constructs:
+- id: class_decl
+  kind: declaration
+  category: type
+  summary: Reference type with single inheritance, constructors (init/primary), static init, abstract/sealed variants, and optional finalizer (~init).
+  syntax:
+    canonical: |
+      open class Animal {
+          var name: String
+          public init(name: String) { this.name = name }
+          public open func speak(): Unit { println(name) }
+      }
+    variants:
+    - 'abstract class Shape { public func area(): Float64 }'
+    - sealed abstract class Expr {}
+    - 'class Dog <: Animal { public override func speak(): Unit { println("Woof") } }'
+    - |
+      class Pair {
+          public Pair(let first: Int64, let second: Int64) {}
+      }
+    - |
+      class Res {
+          public init() {}
+          ~init() { println("releasing") }
+      }
+  semantic_rules:
+  - id: top_level_only
+    op: declaration_scope_is
+    expected_scope: top_level
+  - id: single_inheritance
+    op: at_most_one_superclass
+    note: 'class B <: A { }. A must be open or abstract. Default parent is Object.'
+  - id: override_requires_open_parent
+    op: parent_member_must_be_open
+    note: 'Instance: override. Static: redef. Name and param signature must match.'
+  - id: primary_constructor
+    op: primary_constructor_syntax
+    note: 'Declared inside class body with ClassName as name: class C { public C(let x: T, var y: T) {} }. At most one, creates fields from params. Cannot coexist with this() call.'
+  - id: static_init
+    op: static_init_block
+    note: static init() { } — one per class, inits uninitialized static members, no access mods.
+  - id: init_execution_order
+    op: constructor_order
+    note: 1) Member default values. 2) super()/this() call (first expr in body, mutually exclusive). 3) Constructor body. Implicit super() if parent has parameterless init.
+  - id: static_instance_name_conflict
+    op: member_name_conflict_disallowed
+    diagnostic: duplicate_top_level_symbol
+    note: Same name for static and instance member is not allowed even with different params.
+  - id: non_abstract_satisfies_abstract_members
+    op: abstract_members_satisfied
+    diagnostic: interface_member_not_implemented
+  - id: finalizer_class_cannot_be_open
+    op: has_finalizer_implies_not_open
+    note: ~init() — no params/return/generics/mods. At most one. Not in extend.
+  - id: sealed_class_same_package
+    op: sealed_restriction
+    note: 'sealed abstract class: subclasses must be in the same package. The sealed modifier on the type itself implies public and open semantics (so it can be inherited within the package).'
+  - id: this_type
+    op: This_type_placeholder
+    note: This type in return position resolves to the actual subclass type at each level.
+  - id: auto_generated_init
+    op: default_init
+    note: public init() auto-generated if all instance members have initializers and no custom constructors defined.
+  prerequisites: [identifier, block_exprs, generic_parameters]
