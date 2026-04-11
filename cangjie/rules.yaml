@@ -181,8 +181,8 @@ diagnostics:
     message: throw expression requires a value whose type is a subtype of Exception.
 
   - id: uncaught_exception
-    severity: warning
-    message: Exception may propagate without a matching catch clause.
+    severity: info
+    message: Exception may propagate without a matching catch clause. No compile-time diagnostic; unhandled exceptions crash at runtime with a stack trace.
 
   # --- C FFI ---
   - id: unsafe_context_required

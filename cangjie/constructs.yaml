@@ -232,14 +232,19 @@
     summary: Overload operators inside class, struct, enum, interface, or extend.
     syntax:
       canonical: |
-        struct Point {
+        struct Vec2 {
             var x: Float64 = 0.0
-            public operator func +(right: Point): Point {
-                Point(x + right.x)
+            var y: Float64 = 0.0
+            public init(x: Float64, y: Float64) {
+                this.x = x
+                this.y = y
+            }
+            public operator func +(r: Vec2): Vec2 {
+                Vec2(x + r.x, y + r.y)
             }
         }
       variants:
-        - "public operator func -(): Point { Point(-x) }"
+        - "public operator func -(): Vec2 { Vec2(-x, -y) }"
         - "public operator func [](i: Int64): Int64 { data[i] }"
         - "public operator func [](i: Int64, value!: Int64): Unit { data[i] = value }"
         - "public operator func ()(a: Int64): Int64 { a * 2 }"
@@ -248,6 +253,7 @@
         op: param_count_is
         count: 0
         when: unary_operator
+        note: "Unary prefix: operator func -(): T. Unary postfix (++/--) not overloadable."
       - id: binary_op_one_param
         op: param_count_is
         count: 1
@@ -537,7 +543,10 @@
             }
         }
       variants:
-        - "struct Pair(let first: Int64, let second: Int64) {}"
+        - |
+          struct Pair {
+              public Pair(let first: Int64, let second: Int64) {}
+          }
     semantic_rules:
       - id: top_level_only
         op: declaration_scope_is
@@ -994,7 +1003,7 @@
         note: "Restrict via @Annotation[target: [Type, ...]]."
       - id: annotation_kinds
         op: annotation_kind_enum
-        values: [Type, Parameter, Init, MemberProperty, MemberFunction, MemberVariable]
+        values: [Type, Parameter, Init, MemberProperty, MemberFunction, MemberVariable, EnumConstructor, GlobalFunction, GlobalVariable, Extension]
       - id: reflection_only_sees_public_members
         op: visibility_restriction
         min_visible: public

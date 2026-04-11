@@ -281,8 +281,8 @@
     summary: Condition variable created via mutex.condition(). Must be created while holding the lock.
     import: std.sync.*
     notes:
-      - "wait(): indefinite. wait(timeout): may throw TimeoutException."
-      - "waitUntil(predicate): loop-based wait (avoids spurious wakeups)."
+      - "wait(): indefinite block. wait(timeout!: Duration): Bool — returns false on timeout."
+      - "waitUntil(predicate): loop-based wait (avoids spurious wakeups). waitUntil(predicate, timeout!: Duration): Bool."
       - "notify() and notifyAll() to signal."
 
   - id: SyncCounter

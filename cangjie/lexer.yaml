@@ -16,9 +16,7 @@
       - UInt32
       - UInt64
       - UIntNative
-      - Array
       - VArray
-      - String
       - Nothing
       - Unit
     control_flow:
@@ -63,7 +61,6 @@
       - protected
       - public
       - redef
-      - sealed
       - static
       - struct
       - super
@@ -80,6 +77,13 @@
     other:
       - inout
       - quote
+    contextual_modifiers:
+      - sealed
+      - note: "sealed is not a reserved keyword; it can be used as an identifier but acts as a modifier before abstract class/interface."
+    builtin_type_names:
+      - Array
+      - String
+      - note: "Array and String are built-in type names, not reserved keywords. They can be used as identifiers (shadow the built-in type)."
 
   delimiters:
     - "@"
