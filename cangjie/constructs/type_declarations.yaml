@@ -79,7 +79,10 @@ constructs:
             }
         }
       variants:
-        - "struct Pair(let first: Int64, let second: Int64) {}"
+        - |
+          struct Pair {
+              public Pair(let first: Int64, let second: Int64) {}
+          }
     semantic_rules:
       - id: top_level_only
         op: declaration_scope_is

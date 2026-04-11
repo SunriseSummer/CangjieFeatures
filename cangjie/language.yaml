@@ -24,8 +24,8 @@ scope:
     - generic parameters, where constraints, variance (invariant for user types)
     - type system (is/as, subtyping, type aliases, no implicit conversion)
     - extension declarations (direct and interface extensions, orphan rule)
-    - Option type (?T, ??, ?., if-let, while-let, getOrThrow)
-    - error handling (throw, try/catch/finally, try-with-resources, Exception hierarchy)
+    - Option type (?T, ??, ?-chaining on member/subscript/call/trailing-lambda forms, if-let, while-let, getOrThrow)
+    - error handling (throw, try/catch/finally, try-with-resources, Exception hierarchy, unchecked propagation)
     - concurrency (spawn, Future, Mutex, Condition, synchronized, integer/reference atomics, ThreadLocal, SyncCounter, Timer, Barrier, Semaphore, ReadWriteLock, sleep(Duration))
     - annotations (@Annotation, @OverflowThrowing/Wrapping/Saturating) and reflection (TypeInfo)
     - C interop (foreign, unsafe, CPointer, CFunc, CString, @C struct, VArray, inout, @CallingConv)
@@ -168,7 +168,6 @@ symbol_catalog:
     - let_struct_cannot_call_mut
     - extend_cannot_add_stored_field
     - throw_requires_exception_subtype
-    - uncaught_exception
     - unsafe_context_required
     - foreign_param_not_ctype
     - annotation_target_mismatch

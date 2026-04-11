@@ -157,7 +157,7 @@
     instantiate_as: Option<T>
     notes:
       - Automatic Some wrapping when context expects Option<T> and a T value is provided.
-      - "Coalescing: a ?? b (short-circuit). Optional chaining: a?.member (short-circuit)."
+      - "Coalescing: a ?? b (short-circuit). Question-mark chaining forms: a?.member, a?[i], a?(args), a?{lambda}."
       - "if-let: if (let Some(v) <- opt) { ... }. while-let: while (let Some(v) <- iter.next()) { ... }."
       - "getOrThrow() returns T or throws NoneValueException."
 
@@ -182,6 +182,8 @@
     instantiate_as: HashMap<K, V>
     import: std.collection.*
     notes:
+      - "Mutation API: add(key, value) adds or updates and returns the old value as ?V. There is no put()."
+      - "Subscript supports both read and write: map[key], map[key] = value. Reading a missing key throws NoneValueException; check contains(key) or use get(key) when absence is expected."
       - "Iteration order is not guaranteed. for ((k, v) in map) iterates tuples."
 
   - id: HashSet
@@ -281,8 +283,8 @@
     summary: Condition variable created via mutex.condition(). Must be created while holding the lock.
     import: std.sync.*
     notes:
-      - "wait(): indefinite. wait(timeout): may throw TimeoutException."
-      - "waitUntil(predicate): loop-based wait (avoids spurious wakeups)."
+      - "wait(): indefinite. wait(timeout): Bool, returning false on timeout."
+      - "waitUntil(predicate): loop-based wait (avoids spurious wakeups). waitUntil(predicate, timeout): Bool."
       - "notify() and notifyAll() to signal."
 
   - id: SyncCounter
@@ -409,7 +411,8 @@
     kind: reference
     summary: Base class for catchable exceptions. User-defined exceptions must inherit from Exception (not Error).
     notes:
-      - "API: init(), init(message), prop message: String, toString(), getClassName(), printStackTrace()."
+      - "Common API: init(), init(message), prop message: String, toString(), printStackTrace()."
+      - "User-defined subclasses can override getClassName(): String; built-in exceptions such as IllegalArgumentException do not expose it directly."
       - "Built-in: ArithmeticException, IllegalArgumentException, IllegalStateException, IndexOutOfBoundsException, NegativeArraySizeException, NoneValueException, OverflowException (<: ArithmeticException), ConcurrentModificationException, TimeoutException, IllegalSynchronizationStateException."
 
   - id: Error

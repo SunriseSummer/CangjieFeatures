@@ -16,9 +16,7 @@
       - UInt32
       - UInt64
       - UIntNative
-      - Array
       - VArray
-      - String
       - Nothing
       - Unit
     control_flow:
@@ -63,7 +61,6 @@
       - protected
       - public
       - redef
-      - sealed
       - static
       - struct
       - super
@@ -80,6 +77,11 @@
     other:
       - inout
       - quote
+  contextual_keywords:
+    - sealed
+  predefined_type_identifiers:
+    - Array
+    - String
 
   delimiters:
     - "@"
@@ -257,6 +259,9 @@
     raw:
       wrapper: "`identifier_or_keyword`"
       note: Allows using keywords as identifiers when escaped with backticks.
+    notes:
+      - "Array and String are predefined type names but are not reserved keywords; they may be shadowed by ordinary identifiers."
+      - "sealed is a contextual modifier, not a reserved keyword."
 
   literals:
     integer:

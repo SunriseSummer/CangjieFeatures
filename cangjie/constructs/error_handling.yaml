@@ -46,6 +46,9 @@ constructs:
         op: inheritance_restricted_to
         base: Exception
         note: "Cannot extend Error or its subclasses."
+      - id: exceptions_are_unchecked
+        op: unchecked_exception_propagation
+        note: "The compiler does not require catch clauses or throws declarations. Uncaught exceptions compile and abort at runtime unless intercepted."
       - id: try_expr_type
         op: try_result_type
         note: "try expression type = common parent of try block + all catch blocks (finally excluded)."

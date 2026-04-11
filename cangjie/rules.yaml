@@ -180,10 +180,6 @@ diagnostics:
     severity: error
     message: throw expression requires a value whose type is a subtype of Exception.
 
-  - id: uncaught_exception
-    severity: warning
-    message: Exception may propagate without a matching catch clause.
-
   # --- C FFI ---
   - id: unsafe_context_required
     severity: error

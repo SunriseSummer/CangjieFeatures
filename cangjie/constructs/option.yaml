@@ -30,7 +30,7 @@ constructs:
       - id: optional_chain_short_circuits
         op: short_circuit_evaluation
         target: "?."
-        note: "Supports member access, function calls, and subscript: opt?.member, opt?.func(), opt?.[i]."
+        note: "Question-mark chaining has four canonical forms: expr?.member, expr?[i], expr?(args), expr?{lambda}. Method-call chains such as opt?.method() are valid."
       - id: getOrThrow_throws_NoneValueException
         op: throws_on_none
       - id: none_explicit_type_hint
