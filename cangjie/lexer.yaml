@@ -79,7 +79,7 @@
       - quote
     contextual_modifiers:
       - sealed
-      - note: "sealed is not a reserved keyword; it can be used as an identifier but acts as a modifier before abstract class/interface."
+      - note: "sealed is not a reserved keyword; it can be used as an identifier. It acts as a modifier before abstract class and interface declarations (e.g. sealed abstract class, sealed interface)."
     builtin_type_names:
       - Array
       - String
