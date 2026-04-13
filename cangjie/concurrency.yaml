@@ -101,9 +101,15 @@ condition:
     - "Spurious wake-ups are possible — always wrap wait() in a loop"
     - "wait(timeout) returns false on timeout (does NOT throw)"
 
+  important_constraint: >
+    Cangjie closures that capture local 'var' variables CANNOT escape
+    (cannot be assigned to variables, returned, or passed to spawn).
+    For shared mutable state with spawn, use GLOBAL variables or atomics.
+
   producer_consumer_example: |
     import std.sync.*
 
+    // Shared mutable state must be GLOBAL (not local var) for spawn
     var ready = false
     let mtx = Mutex()
     let cond = synchronized(mtx) { mtx.condition() }

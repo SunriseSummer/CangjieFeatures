@@ -187,8 +187,8 @@ annotations:
         - MemberVariable    # member variable declarations
 
     retrieval: |
-      import std.reflect.TypeInfo
-      let ann = TypeInfo.of(obj).findAnnotation<Version>()
+      import std.reflect.*
+      let ann = ClassTypeInfo.of(obj).findAnnotation<Version>()
       if (let Some(v) <- ann) { println(v.code) }
 
 # ═══════════════════════════════════════════════════════════════
@@ -198,10 +198,10 @@ reflection:
   core_type: "TypeInfo (from std.reflect)"
 
   obtaining_type_info:
-    from_instance: "TypeInfo.of(anyValue)"
-    from_object: "ClassTypeInfo.of(objectValue)  — preferred for class types"
+    from_object: "ClassTypeInfo.of(objectValue)  — preferred for class instances"
     from_type_param: "TypeInfo.of<SomeType>()"
     from_name: "TypeInfo.get(\"module.package.Type\")  — throws InfoNotFoundException if not found"
+    deprecated: "TypeInfo.of(Object) is deprecated — use ClassTypeInfo.of(Object) instead"
     rules:
       - "Built-in types use bare names: TypeInfo.get(\"Int64\")"
       - "Cannot get TypeInfo for uninstantiated generic types"
@@ -213,14 +213,14 @@ reflection:
       sv.getValue()          // returns Any
       sv.setValue(newValue)
 
-      let iv = info.getInstanceVariable("name")
-      iv.getValue(instance)
-      iv.setValue(instance, newValue)
+      let iv = ClassTypeInfo.of(obj).getInstanceVariable("name")
+      iv.getValue(obj)
+      iv.setValue(obj, newValue)
     properties: |
-      let prop = info.getInstanceProperty("name")
-      prop.getValue(instance)
-      if (prop.isMutable()) { prop.setValue(instance, newValue) }
+      let prop = ClassTypeInfo.of(obj).getInstanceProperty("name")
+      prop.getValue(obj)
+      if (prop.isMutable()) { prop.setValue(obj, newValue) }
     functions: |
       let intInfo = TypeInfo.of<Int64>()
-      let func = info.getStaticFunction("add", intInfo, intInfo)
-      let result = func.apply(info, [arg1, arg2])
+      let funcInfo = TypeInfo.of<Calculator>().getStaticFunction("add", intInfo, intInfo)
+      let result = funcInfo.apply(TypeInfo.of<Calculator>(), [1, 1])
