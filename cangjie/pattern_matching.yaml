@@ -1,0 +1,243 @@
+# Cangjie Language — Pattern Matching & Option Type
+
+# ─── 1. match Expression ─────────────────────────────────────
+match_expression:
+  with_value:
+    syntax: |
+      let result = match (expr) {
+          case pattern1 => value1
+          case pattern2 =>
+              statement1
+              value2       // last expression is the branch value
+          case _ => default_value
+      }
+    rules:
+      - "Branches do NOT use { } — multiple expressions on separate lines"
+      - "Top-to-bottom matching; first match executes (no fall-through)"
+      - "Must be exhaustive (cover all possible values) or use _ as catch-all"
+      - "Branch value = last expression; match value = executed branch value"
+      - "| combines multiple patterns in one case"
+
+  without_value:
+    syntax: |
+      match {
+          case x > 0 => println("positive")
+          case x < 0 => println("negative")
+          case _      => println("zero")
+      }
+    note: "Each case takes a Bool expression (not a pattern). _ means true."
+
+  pattern_guard:
+    syntax: "case Pattern where condition => ..."
+    note: "Uses 'where' keyword (NOT 'if')"
+    example: |
+      enum Color { | Red(UInt8) | Green(UInt8) | Blue(UInt8) }
+
+      main() {
+          let c = Color.Green(200)
+          let name = match (c) {
+              case Green(g) where g > 128 => "bright green"
+              case Green(_) => "dark green"
+              case _ => "other"
+          }
+          println(name)  // bright green
+      }
+
+  type_rules:
+    - "With context type: each branch body must be subtype of expected type"
+    - "Without context: type = least common supertype of all branches"
+    - "If value unused: type is Unit"
+
+# ─── 2. Pattern Types ────────────────────────────────────────
+patterns:
+  constant:
+    description: "Integer, float, char, bool, string literals, Unit literal"
+    combine: "| to combine: case 1 | 2 | 3 => ..."
+    example: |
+      let level = match (score) {
+          case 90 | 100 => "A"
+          case 70 | 80 => "B"
+          case _ => "other"
+      }
+
+  wildcard:
+    syntax: "_"
+    description: "Matches any value, typically used as catch-all"
+
+  binding:
+    syntax: "id"
+    description: "Matches any value and binds it to immutable variable 'id'"
+    scope: "From binding point to end of that case branch"
+    restriction: "Cannot combine with |"
+
+  tuple:
+    syntax: "(p1, p2, ..., pn) — n ≥ 2"
+    description: "Matches when all sub-patterns match"
+    example: |
+      match (("Alice", 24)) {
+          case ("Alice", age) => println("Alice is ${age}")
+          case (_, _) => println("unknown")
+      }
+
+  type_pattern:
+    syntax: "id: Type or _: Type"
+    description: "Runtime type check — matches if value is subtype of Type"
+    binding: "If id is provided, value is cast and bound"
+    example: |
+      open class Base { var a = 10 }
+      class Derived <: Base { public init() { a = 20 } }
+
+      main() {
+          let r = match (Derived() as Base) {
+              case d: Derived => d.a
+              case _ => 0
+          }
+          println(r)  // 20
+      }
+
+  enum_pattern:
+    syntax: "Constructor or Constructor(p1, ..., pn)"
+    description: "Matches enum constructor; type prefix optional if unambiguous"
+    example: |
+      enum Shape {
+          | Circle(Float64)
+          | Rect(Float64, Float64)
+      }
+
+      main() {
+          let s = Circle(5.0)
+          let area = match (s) {
+              case Circle(r) => 3.14159 * r * r
+              case Rect(w, h) => w * h
+          }
+          println(area)  // 78.539750
+      }
+
+  nesting: >
+    Tuple and enum patterns can nest arbitrarily deep:
+    case (SetTimeUnit(Year(y)), true) => ...
+
+# ─── 3. Refutability ─────────────────────────────────────────
+refutability:
+  always_refutable: [constant, type_pattern]
+  always_irrefutable: [wildcard, binding]
+  conditional:
+    tuple: "Irrefutable only if ALL sub-patterns are irrefutable"
+    enum: "Irrefutable only if enum has exactly ONE constructor with all irrefutable sub-patterns"
+
+# ─── 4. Option Type ──────────────────────────────────────────
+option_type:
+  definition: |
+    enum Option<T> {
+        | Some(T)
+        | None
+    }
+  shorthand: "?T is equivalent to Option<T>"
+  auto_wrapping: >
+    When context expects Option<T>, a value of type T is automatically wrapped
+    in Some. This is NOT a type conversion.
+  explicit_none: "None<Int64>  — when type cannot be inferred"
+
+  unwrapping:
+    match: |
+      match (opt) {
+          case Some(v) => use(v)
+          case None => handleMissing()
+      }
+
+    coalescing: |
+      // ?? — provides default value; short-circuit on Some
+      let name = findUser(id) ?? "unknown"
+
+    optional_chaining: |
+      // ?. — safe member access, returns Option
+      let len = buffer?.size       // Some(size) or None
+      let deep = a?.b.c?.d         // chains; short-circuits on first None
+
+    get_or_throw: |
+      // getOrThrow() — returns value or throws NoneValueException
+      let v = opt.getOrThrow()
+
+# ─── 5. if-let ───────────────────────────────────────────────
+if_let:
+  syntax: |
+    if (let Some(v) <- opt) {
+        // v is available here
+    } else {
+        // v is NOT available here
+    }
+  multi_condition_and: |
+    // && — all must match; variables from earlier patterns available in later ones
+    if (let Some(user) <- findUser(1) && let Some(age) <- findAge(user)) {
+        println("${user} age ${age}")
+    }
+  multi_condition_or: |
+    // || — at least one matches; NO variable bindings allowed (use _ only)
+    if (let Some(_) <- a || let Some(_) <- b) {
+        println("at least one has a value")
+    }
+  pitfalls:
+    - "|| patterns cannot bind variables"
+    - "Bound variables NOT available in else branch"
+    - "Use && for extra conditions (NOT 'where' — where is only for match guards)"
+
+# ─── 6. while-let ────────────────────────────────────────────
+while_let:
+  syntax: |
+    // Common use: iterate through an iterator
+    var it = list.iterator()
+    while (let Some(item) <- it.next()) {
+        println(item)
+    }
+  desugars_to: |
+    while (true) {
+        match (it.next()) {
+            case Some(item) => println(item)
+            case None => break
+        }
+    }
+
+# ─── 7. Destructuring in Other Contexts ──────────────────────
+destructuring:
+  variable_definition: "let (x, y) = (1, 2)"
+  for_in: "for ((k, v) in pairs) { ... }"
+  note: "Only irrefutable patterns allowed in variable definitions and for-in"
+
+# ─── 8. Complete Example ─────────────────────────────────────
+complete_example: |
+  func findUser(id: Int64): ?String {
+      if (id == 1) { "Alice" } else { None }
+  }
+
+  func findAge(name: String): ?Int64 {
+      if (name == "Alice") { 30 } else { None }
+  }
+
+  main() {
+      // ?? default
+      let name = findUser(1) ?? "unknown"
+      println(name)  // Alice
+
+      // if-let
+      if (let Some(user) <- findUser(1)) {
+          println("found: ${user}")  // found: Alice
+      }
+
+      // if-let + &&
+      if (let Some(user) <- findUser(1) && let Some(age) <- findAge(user)) {
+          println("${user} age ${age}")  // Alice age 30
+      }
+
+      // while-let
+      let ids = [1, 2, 3]
+      var it = ids.iterator()
+      while (let Some(id) <- it.next()) {
+          println("id=${id}: ${findUser(id) ?? \"unknown\"}")
+      }
+
+      // match
+      match (findUser(99)) {
+          case Some(u) => println(u)
+          case None => println("not found")  // not found
+      }
+  }

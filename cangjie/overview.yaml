@@ -1,0 +1,61 @@
+# Cangjie (仓颉) Programming Language — Overview
+# Version: SDK 1.0.5
+# This file provides the top-level identity and design philosophy.
+
+language:
+  name: Cangjie (仓颉)
+  version: "1.0.5"
+  paradigms:
+    - multi-paradigm
+    - object-oriented (class-based, single inheritance)
+    - functional (first-class functions, closures, lambdas, pattern matching)
+    - generic programming (parameterized types with constraints)
+    - concurrent (M:N lightweight threads, atomics, locks)
+
+  typing:
+    system: static, strong
+    inference: local type inference (variables, lambda return types)
+    null_safety: Option<T> (?T) — no null references
+
+  memory:
+    model: managed (garbage collected)
+    value_types: primitives, struct, VArray, Tuple
+    reference_types: class, Array, String, enum
+    unsafe_ffi: CPointer, CString, LibC.malloc/free (requires unsafe block)
+
+  compilation:
+    target: native code (AOT)
+    toolchain: cjpm (project manager), cjc (compiler), cjdb (debugger)
+    macro_system: compile-time metaprogramming via Token/Tokens + AST manipulation
+
+  entry_point: |
+    # 'main' function — no 'func' keyword, optional params/return type
+    main() {
+        println("Hello, Cangjie!")
+    }
+
+  file_structure:
+    extension: ".cj"
+    project_config: "cjpm.toml"
+    source_dir: "src/"
+    entry_file: "src/main.cj"
+
+  key_influences:
+    - Kotlin (null safety via Option, sealed types, named params)
+    - Rust (value types, pattern matching, Option/Result pattern)
+    - Swift (trailing lambdas, pipe operators, enum associated values)
+    - Go (lightweight threads via spawn, simple package system)
+    - C++ (templates/generics, operator overloading, RAII-like try-with-resources)
+
+  feature_files:
+    - basics.yaml          # Keywords, identifiers, variables, basic types, operators
+    - functions.yaml       # Functions, lambdas, closures, operator overloading
+    - types.yaml           # Classes, structs, interfaces, enums, type system
+    - generics.yaml        # Generic types, constraints, variance
+    - pattern_matching.yaml # match expressions, Option type, if-let, while-let
+    - error_handling.yaml  # Exceptions, try/catch, Option-based error handling
+    - concurrency.yaml     # Threads, atomics, locks, synchronization
+    - extensions.yaml      # Type extensions, orphan rules
+    - metaprogramming.yaml # Macros, annotations, reflection
+    - modules.yaml         # Packages, imports, access control
+    - ffi.yaml             # C interop, foreign functions, memory management

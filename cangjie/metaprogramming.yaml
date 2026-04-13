@@ -1,0 +1,226 @@
+# Cangjie Language — Metaprogramming
+# Macros, annotations, reflection
+
+# ─── 1. Macros Overview ──────────────────────────────────────
+macros:
+  concept: >
+    Macros are special functions that operate on program fragments (Tokens),
+    not values. They execute at compile time, transforming input code into
+    output code that replaces the macro call site.
+  invocation: "@MacroName(...) or @MacroName before a declaration"
+  requirements:
+    - "Must be declared in a dedicated macro package: 'macro package <name>'"
+    - "Must import std.ast.*"
+    - "Macro definition and call site must be in different packages"
+
+# ─── 2. Token & Tokens ───────────────────────────────────────
+tokens:
+  Token:
+    description: "Smallest lexical unit: identifier, literal, keyword, or operator"
+    constructor: "Token(kind: TokenKind) or Token(kind: TokenKind, value: String)"
+  Tokens:
+    description: "Sequence of Token objects"
+    operations: ["size", "get(index)", "[] indexing", "+ concatenation", "dump()", "toString()"]
+
+  quote:
+    description: "Converts code template into Tokens"
+    syntax: "quote( ... code ... )"
+    interpolation: "$(expr) inside quote — inserts any value implementing ToTokens"
+    escaping:
+      unmatched_parens: "\\( or \\)"
+      dollar_literal: "\\$"
+      at_sign: "\\@"
+
+# ─── 3. Non-Attribute Macros ─────────────────────────────────
+non_attribute_macro:
+  definition: "public macro Name(input: Tokens): Tokens { ... }"
+  call_syntax: "@Name(...) or @Name before a declaration"
+  example: |
+    // In macro package 'macros/src/my_macros.cj':
+    macro package macros
+    import std.ast.*
+
+    public macro AutoToString(input: Tokens): Tokens {
+        let decl = parseDecl(input)
+        let classDecl = match (decl as ClassDecl) {
+            case Some(v) => v
+            case None => return input
+        }
+        let className = classDecl.identifier
+        var fields = ArrayList<Token>()
+        for (d in classDecl.body.decls) {
+            if (let Some(varDecl) <- (d as VarDecl)) {
+                fields.add(varDecl.identifier)
+            }
+        }
+        var parts = quote(var result = $(className.value) + "{")
+        for (f in fields) {
+            let label = " " + f.value + "="
+            parts = quote($(parts)
+                result += $(label) + this.$(f).toString()
+            )
+        }
+        parts = quote($(parts)
+            result += " }"
+            return result
+        )
+        let funcDecl = parseDecl(quote(
+            public func toString(): String { $(parts) }
+        ))
+        classDecl.body.decls.add(funcDecl)
+        return classDecl.toTokens()
+    }
+
+    // In caller 'src/main.cj':
+    // import macros.*
+    // @AutoToString
+    // class User { var name: String = ""; var age: Int64 = 0 }
+
+# ─── 4. Attribute Macros ─────────────────────────────────────
+attribute_macro:
+  definition: "public macro Name(attrs: Tokens, input: Tokens): Tokens { ... }"
+  call_syntax: "@Name[attrContent](inputContent) or @Name[attrContent] before a declaration"
+  rules:
+    - "Two Tokens params: attribute content (in []) and input content"
+    - "If macro has 2 params → call site must use [] (can be empty)"
+    - "If macro has 1 param → call site must NOT use []"
+
+# ─── 5. Nested Macros ────────────────────────────────────────
+nested_macros:
+  definition_nesting: "NOT allowed"
+  call_nesting: "Allowed — inner macros expand first, then outer (inside-out)"
+  communication:
+    context_check:
+      - "assertParentContext(\"OuterMacroName\") — error if not inside outer macro"
+      - "insideParentContext(\"OuterMacroName\") → Bool"
+    message_passing:
+      inner_sends: "setItem(\"key\", \"value\")"
+      outer_receives: "getChildMessages(\"InnerMacroName\") → collection of message objects"
+      read_message: "message.getString(\"key\")"
+
+# ─── 6. std.ast Package ──────────────────────────────────────
+std_ast:
+  purpose: "Core dependency for macro programming — lexing and parsing"
+  parse_functions:
+    - "parseExpr(Tokens) → Expr"
+    - "parseDecl(Tokens) → Decl"
+    - "parseType(Tokens) → TypeNode"
+    - "parsePattern(Tokens) → Pattern"
+    - "parseProgram(Tokens) → Program"
+  ast_hierarchy:
+    base: Node
+    branches: [TypeNode, Expr, Decl, Pattern]
+  common_nodes:
+    FuncDecl: "identifier, funcParams, declType, block, modifiers"
+    ClassDecl: "identifier, body, modifiers, superTypes"
+    VarDecl: "identifier, declType, expr, keyword (var/let)"
+    BinaryExpr: "leftExpr, op, rightExpr"
+    CallExpr: "callExpr, arguments"
+  visitor:
+    pattern: |
+      class MyVisitor <: Visitor {
+          public override func visit(funcDecl: FuncDecl) {
+              println("Found: ${funcDecl.identifier.value}")
+          }
+      }
+      // Usage: node.traverse(MyVisitor())
+  utilities:
+    - "cangjieLex(String) → Tokens"
+    - "compareTokens(Tokens, Tokens) → comparison"
+    - "diagReport(level, tokens, msg, hint) — report errors/warnings during expansion"
+
+# ─── 7. Macro Build Rules ────────────────────────────────────
+build:
+  package: "Must use 'macro package <name>' declaration"
+  compilation: "Macro package must be compiled FIRST (cjc --compile-macro or cjpm with compile-option)"
+  cjpm_config: "In macro module's cjpm.toml: compile-option = \"--compile-macro\""
+
+# ═══════════════════════════════════════════════════════════════
+# ─── 8. Annotations ──────────────────────────────────────────
+annotations:
+  overflow_annotations:
+    description: "Control integer overflow behavior (applied to function declarations)"
+    types:
+      OverflowThrowing: "DEFAULT — throws ArithmeticException on overflow"
+      OverflowWrapping: "Truncates high bits (modular arithmetic)"
+      OverflowSaturating: "Clamps to type min/max value"
+    example: |
+      @OverflowWrapping
+      func wrappingAdd(): Int8 {
+          Int8(127) + Int8(1)  // wraps to -128
+      }
+
+      @OverflowSaturating
+      func saturatingSub(): Int8 {
+          Int8(-100) - Int8(50)  // saturates to -128
+      }
+
+  custom_annotations:
+    syntax: |
+      import std.reflect.TypeInfo
+
+      @Annotation
+      public class Version {
+          let code: String
+          const init(code: String) { this.code = code }
+      }
+
+      @Version["1.0"]
+      class MyService {}
+    rules:
+      - "Class marked with @Annotation"
+      - "Cannot be abstract, open, or sealed"
+      - "Must have at least one 'const init'"
+      - "Apply with @Name[args] — args must be const expressions"
+      - "Same annotation cannot be applied twice to the same target"
+      - "NOT inherited by subclasses"
+      - "No-arg annotation: @Marked equivalent to @Marked[]"
+
+    annotation_targets:
+      description: "Restrict where annotation can be applied with @Annotation[target: [...]]"
+      kinds:
+        - Type              # class/struct/enum/interface declarations
+        - Parameter         # function/constructor parameters
+        - Init              # constructor declarations
+        - MemberProperty    # member property declarations
+        - MemberFunction    # member function declarations
+        - MemberVariable    # member variable declarations
+
+    retrieval: |
+      import std.reflect.*
+      let ann = ClassTypeInfo.of(obj).findAnnotation<Version>()
+      if (let Some(v) <- ann) { println(v.code) }
+
+# ═══════════════════════════════════════════════════════════════
+# ─── 9. Reflection ───────────────────────────────────────────
+reflection:
+  concept: "Runtime access to type information, members, and invocation"
+  core_type: "TypeInfo (from std.reflect)"
+
+  obtaining_type_info:
+    from_object: "ClassTypeInfo.of(objectValue)  — preferred for class instances"
+    from_type_param: "TypeInfo.of<SomeType>()"
+    from_name: "TypeInfo.get(\"module.package.Type\")  — throws InfoNotFoundException if not found"
+    deprecated: "TypeInfo.of(Object) is deprecated — use ClassTypeInfo.of(Object) instead"
+    rules:
+      - "Built-in types use bare names: TypeInfo.get(\"Int64\")"
+      - "Cannot get TypeInfo for uninstantiated generic types"
+
+  accessing_members:
+    visibility: "Only public members are visible via reflection"
+    variables: |
+      let sv = info.getStaticVariable("name")
+      sv.getValue()          // returns Any
+      sv.setValue(newValue)
+
+      let iv = ClassTypeInfo.of(obj).getInstanceVariable("name")
+      iv.getValue(obj)
+      iv.setValue(obj, newValue)
+    properties: |
+      let prop = ClassTypeInfo.of(obj).getInstanceProperty("name")
+      prop.getValue(obj)
+      if (prop.isMutable()) { prop.setValue(obj, newValue) }
+    functions: |
+      let intInfo = TypeInfo.of<Int64>()
+      let funcInfo = TypeInfo.of<Calculator>().getStaticFunction("add", intInfo, intInfo)
+      let result = funcInfo.apply(TypeInfo.of<Calculator>(), [1, 1])

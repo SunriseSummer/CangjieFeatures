@@ -1,0 +1,127 @@
+# Cangjie Language — Generics
+# Generic types, constraints, variance
+
+# ─── 1. Overview ──────────────────────────────────────────────
+overview:
+  concept: "Parameterized types — declared with unknown types, specified at use site"
+  supported_constructs: [function, class, interface, struct, enum]
+  syntax: "Name<T1, T2, ...> — type parameters in angle brackets after name"
+  terminology:
+    type_parameter: "The placeholder type declared in <>"
+    type_variable: "The identifier referring to the type parameter inside the body"
+    type_argument: "The concrete type provided at use site"
+    type_constructor: "The generic name that accepts type args to produce a concrete type"
+
+# ─── 2. Generic Functions ────────────────────────────────────
+generic_functions:
+  global: |
+    func id<T>(a: T): T { a }
+
+    main() {
+        println(id<Int64>(42))      // 42
+        println(id<String>("hi"))   // hi
+    }
+  local: "Generic functions can be nested inside other functions"
+  member: |
+    class Printer {
+        func print<T>(a: T) where T <: ToString {
+            println("${a}")
+        }
+    }
+  static: "interface, class, struct, enum, extend can define static generic functions"
+  in_extensions: "Extensions can add generic member functions to existing types"
+
+# ─── 3. Generic Class ────────────────────────────────────────
+generic_class:
+  syntax: |
+    open class Pair<T, U> {
+        let first: T
+        let second: U
+        public init(a: T, b: U) { first = a; second = b }
+    }
+
+    main() {
+        let p = Pair<Int64, String>(1, "hello")
+        println("${p.first}, ${p.second}")  // 1, hello
+    }
+  static_member_restriction: >
+    Static member variables/properties are shared across all instantiations,
+    so their type declarations and initializer expressions CANNOT reference
+    type parameters or contain uninstantiated generic types.
+
+# ─── 4. Generic Interface ────────────────────────────────────
+generic_interface:
+  syntax: |
+    public interface Comparable<T> {
+        func compareTo(other: T): Int64
+    }
+
+    class MyInt <: Comparable<MyInt> {
+        var value: Int64
+        public init(v: Int64) { value = v }
+        public func compareTo(other: MyInt): Int64 { value - other.value }
+    }
+
+# ─── 5. Generic Struct ───────────────────────────────────────
+generic_struct:
+  syntax: |
+    struct Pair<T, U> {
+        let x: T
+        let y: U
+        public init(a: T, b: U) { x = a; y = b }
+    }
+
+# ─── 6. Generic Enum ─────────────────────────────────────────
+generic_enum:
+  syntax: |
+    // The canonical example: Option<T>
+    enum Option<T> {
+        | Some(T)
+        | None
+    }
+
+# ─── 7. Constraints (where) ─────────────────────────────────
+constraints:
+  purpose: >
+    Without constraints, only pass/return operations are allowed on generic types.
+    Constraints specify what operations/interfaces the type parameter must support.
+  syntax: |
+    // Single constraint
+    func print<T>(a: T) where T <: ToString {
+        println("${a}")
+    }
+
+    // Multiple constraints with &
+    func process<T>(a: T) where T <: ToString & Comparable<T> {
+        println("${a}")
+    }
+
+    // Multiple type parameters
+    func combine<K, V>(k: K, v: V) where K <: Hashable & Equatable<K>, V <: ToString {
+        println("${k}: ${v}")
+    }
+  allowed_bounds: "Concrete class types or interfaces only"
+  multiple_class_bounds: "Must be on the same inheritance chain"
+
+# ─── 8. Subtyping & Variance ─────────────────────────────────
+variance:
+  instantiated_subtyping: |
+    # If class C<Z> <: I<Z>, then C<Bool> <: I<Bool>, C<String> <: I<String>, etc.
+  user_defined_types: >
+    ALL user-defined generic types are INVARIANT in all type parameters.
+    List<Child> is NOT a subtype of List<Parent>.
+  builtin_exceptions:
+    tuple: "Covariant — (Child, Child) <: (Parent, Parent)"
+    function: >
+      Contravariant in params, covariant in return.
+      (Parent) -> Child <: (Child) -> Parent
+
+# ─── 9. Feature Matrix ───────────────────────────────────────
+feature_matrix:
+  columns: [function, class, interface, struct, enum]
+  type_parameters: [yes, yes, yes, yes, yes]
+  where_constraints: [yes, yes, yes, yes, yes]
+  generic_member_functions: [n/a, yes, yes, yes, yes]
+  static_generic_functions: [n/a, yes, yes, yes, yes]
+  generic_in_extensions: [yes, no, no, no, no]
+  subtype_variance: [n/a, invariant, invariant, invariant, invariant]

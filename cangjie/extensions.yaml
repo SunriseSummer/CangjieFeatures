@@ -1,0 +1,164 @@
+# Cangjie Language — Type Extensions
+# Direct extensions, interface extensions, access rules, orphan rules
+
+# ─── 1. Overview ──────────────────────────────────────────────
+overview:
+  purpose: "Add new functionality to any visible type in the current package"
+  cannot_extend: "Functions and tuples"
+  can_add:
+    - member functions
+    - operator overload functions
+    - member properties (prop with get/set)
+    - interface implementations
+  cannot_add:
+    - "member variables (stored properties)"
+    - "functions/properties without implementation body"
+  restrictions:
+    - "Cannot use open, override, or redef on extension members"
+    - "Cannot access the extended type's private members"
+  two_kinds:
+    direct: "Adds functions/properties without involving interfaces"
+    interface_ext: "Implements one or more interfaces for the type"
+
+# ─── 2. Direct Extension ─────────────────────────────────────
+direct_extension:
+  basic: |
+    extend String {
+        public func printSize() {
+            println("size is ${this.size}")
+        }
+    }
+
+    main() {
+        "hello".printSize()  // size is 5
+    }
+
+  generic_type:
+    concrete_instantiation: |
+      class Foo<T> where T <: ToString {}
+      extend Foo<Int64> {
+          public func show() { println("Foo<Int64>") }
+      }
+    generic_extension: |
+      class MyList<T> {}
+      extend<T> MyList<T> {
+          public func info() { println("MyList<T>") }
+      }
+    rules:
+      - "Each type parameter in extend<...> MUST appear in the extended type"
+      - "extend MyList {} is an error (missing type arguments for generic type)"
+
+  additional_constraints: |
+    // Extension members available only when constraints are met
+    class Pair<T1, T2> {
+        var first: T1
+        var second: T2
+        public init(a: T1, b: T2) { first = a; second = b }
+    }
+
+    interface Eq<T> {
+        func equals(other: T): Bool
+    }
+
+    extend<T1, T2> Pair<T1, T2> where T1 <: Eq<T1>, T2 <: Eq<T2> {
+        public func equals(other: Pair<T1, T2>): Bool {
+            first.equals(other.first) && second.equals(other.second)
+        }
+    }
+
+# ─── 3. Interface Extension ──────────────────────────────────
+interface_extension:
+  syntax: |
+    interface Printable {
+        func display(): Unit
+    }
+
+    extend<T> Array<T> <: Printable {
+        public func display() {
+            println("Array of size ${this.size}")
+        }
+    }
+
+  multiple_interfaces: |
+    interface I1 { func f1(): Unit }
+    interface I2 { func f2(): Unit }
+    class Foo {}
+
+    extend Foo <: I1 & I2 {
+        public func f1() { println("f1") }
+        public func f2() { println("f2") }
+    }
+
+  already_satisfied: |
+    // If the type already has the required members, extension body can be empty
+    interface Sizeable { prop size: Int64 }
+    extend<T> Array<T> <: Sizeable {}  // Array already has prop size
+
+# ─── 4. Access Rules ─────────────────────────────────────────
+access_rules:
+  extension_level: "Extensions themselves CANNOT have access modifiers"
+  member_modifiers:
+    allowed: [static, public, protected, internal, private, mut]
+    not_allowed: [open, override, redef]
+    defaults:
+      private: "visible only within the extension block"
+      internal: "current package and subpackages (DEFAULT)"
+      protected: "current module"
+      public: "globally visible"
+
+  struct_mut: |
+    struct Counter { var count: Int64 = 0 }
+    extend Counter {
+        public mut func increment() { count += 1 }
+    }
+
+    main() {
+        var c = Counter()  // must be 'var' for mut functions
+        c.increment()
+        println(c.count)  // 1
+    }
+
+  this_and_super:
+    this: "Available in extension instance members (can be omitted)"
+    super: "NOT available in extension members"
+
+  private_access: "Extensions CANNOT access the extended type's private members"
+
+  no_shadowing:
+    - "Cannot redefine members that already exist on the type"
+    - "Cannot redefine members from another extension of the same type"
+
+  cross_extension_visibility:
+    same_package: "Non-private members in one extension are visible from another extension of the same type"
+    private_members: "Scoped to their own extension block only"
+
+  generic_visibility:
+    same_constraints: "Mutually visible"
+    subset_constraints: "Looser extension's members visible to stricter; not vice versa"
+    unrelated_constraints: "Not mutually visible"
+
+# ─── 5. Orphan Rule ──────────────────────────────────────────
+orphan_rule:
+  description: >
+    Cannot implement an interface for a type when both the interface AND the type
+    are from different packages. The extension must be in the same package as
+    either the type or the interface.
+  example: |
+    // package a: public class Foo {}
+    // package b: public interface Bar {}
+    // package c:
+    //   import a.Foo; import b.Bar
+    //   extend Foo <: Bar {}  // ERROR — orphan extension
+
+# ─── 6. Export & Import Rules ─────────────────────────────────
+export_import:
+  direct_extension:
+    same_package: "Exported when type and all generic constraints are exported types"
+    different_package: "Never exported"
+  interface_extension:
+    same_package_as_type: "Exported with the type, regardless of interface access level"
+    different_package: "Export determined by lowest access level among implemented interfaces and constraints"
+  import:
+    implicit: "Extensions are imported implicitly — no explicit import needed"
+    direct: "Importing the type automatically imports its exported direct extensions"
+    interface: "Must import BOTH the type AND the interface to access interface extension members"

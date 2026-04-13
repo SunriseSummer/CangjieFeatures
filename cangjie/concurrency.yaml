@@ -1,0 +1,204 @@
+# Cangjie Language — Concurrency
+# Thread model, spawn, atomics, mutex, condition, synchronized, Future
+
+# ─── 1. Thread Model ─────────────────────────────────────────
+thread_model:
+  type: "M:N — M lightweight (user-space) threads scheduled onto N OS threads"
+  preemptive: true
+  note: >
+    Blocking foreign function calls (e.g. C socket_read) block the entire
+    OS thread, preventing it from scheduling other Cangjie threads.
+
+# ─── 2. Creating Threads ─────────────────────────────────────
+spawn:
+  syntax: "spawn { => ... }  — creates a new lightweight thread"
+  returns: "Future<T> where T is the lambda's return type"
+  warning: "Main thread exit kills all spawned threads even if unfinished"
+  example: |
+    import std.sync.*
+
+    main() {
+        let counter = SyncCounter(1)
+        let f = spawn { =>
+            println("worker thread")
+            counter.dec()
+            42
+        }
+        counter.waitUntilZero()
+        println("result: ${f.get()}")  // result: 42
+    }
+
+# ─── 3. sleep ────────────────────────────────────────────────
+sleep:
+  signature: "func sleep(dur: Duration): Unit"
+  behavior: "Blocks current thread for at least 'dur'"
+  zero_or_negative: "Thread yields execution resource without sleeping"
+
+# ─── 4. Atomic Operations ────────────────────────────────────
+atomics:
+  integer_types:
+    - AtomicInt8
+    - AtomicInt16
+    - AtomicInt32
+    - AtomicInt64
+    - AtomicUInt8
+    - AtomicUInt16
+    - AtomicUInt32
+    - AtomicUInt64
+  bool_type: AtomicBool
+  reference_type: "AtomicReference<T> (T must be reference type)"
+
+  integer_operations:
+    - "load() → value"
+    - "store(val)"
+    - "swap(val) → old value"
+    - "compareAndSwap(expected, new) → Bool"
+    - "fetchAdd(val) → old value"
+    - "fetchSub(val) → old value"
+    - "fetchAnd(val) → old value"
+    - "fetchOr(val) → old value"
+    - "fetchXor(val) → old value"
+
+  bool_and_ref_operations:
+    - "load(), store(val), swap(val), compareAndSwap(expected, new)"
+
+  notes:
+    - "swap/fetch operations return the value BEFORE modification"
+    - "AtomicReference CAS compares object identity, not value equality"
+    - "Memory ordering: sequential consistency only"
+
+# ─── 5. Mutex (Reentrant Lock) ───────────────────────────────
+mutex:
+  import: "import std.sync.*"
+  api:
+    - "init()"
+    - "lock(): Unit"
+    - "unlock(): Unit"
+    - "tryLock(): Bool"
+    - "condition(): Condition  — MUST be called while lock is held"
+  rules:
+    - "Reentrant: same thread can lock multiple times without deadlock"
+    - "unlock() count must match lock() count to fully release"
+    - "unlock() without lock() throws IllegalSynchronizationStateException"
+
+# ─── 6. Condition Variables ──────────────────────────────────
+condition:
+  creation: |
+    // MUST create while mutex is locked
+    let mtx = Mutex()
+    let cond = synchronized(mtx) { mtx.condition() }
+  api:
+    - "wait(): Unit                         — blocks until notified"
+    - "wait(timeout!: Duration): Bool       — returns false on timeout"
+    - "waitUntil(pred: ()->Bool): Unit      — loops until predicate is true"
+    - "waitUntil(pred: ()->Bool, timeout!: Duration): Bool"
+    - "notify(): Unit                       — wake one waiting thread"
+    - "notifyAll(): Unit                    — wake all waiting threads"
+  rules:
+    - "Must hold the associated mutex when calling wait/notify/notifyAll"
+    - "wait() fully releases the mutex (recording reentry count)"
+    - "On wake-up, reacquires mutex with same reentry state"
+    - "Spurious wake-ups are possible — always wrap wait() in a loop"
+    - "wait(timeout) returns false on timeout (does NOT throw)"
+
+  important_constraint: >
+    Cangjie closures that capture local 'var' variables CANNOT escape
+    (cannot be assigned to variables, returned, or passed to spawn).
+    For shared mutable state with spawn, use GLOBAL variables or atomics.
+
+  producer_consumer_example: |
+    import std.sync.*
+
+    // Shared mutable state must be GLOBAL (not local var) for spawn
+    var ready = false
+    let mtx = Mutex()
+    let cond = synchronized(mtx) { mtx.condition() }
+
+    main() {
+        let consumer = spawn { =>
+            synchronized(mtx) {
+                while (!ready) { cond.wait() }
+                println("Consumer: ready!")
+            }
+        }
+        let producer = spawn { =>
+            sleep(Duration.second)
+            synchronized(mtx) {
+                ready = true
+                cond.notifyAll()
+            }
+        }
+        consumer.get()
+        producer.get()
+    }
+
+# ─── 7. synchronized ─────────────────────────────────────────
+synchronized:
+  import: "import std.sync.*"
+  syntax: |
+    let mtx = Mutex()
+    let result = synchronized(mtx) {
+        // critical section — auto lock/unlock
+        42
+    }
+  rules:
+    - "Automatically acquires lock on entry, releases on exit"
+    - "Releases on all exit paths: normal, break, continue, return, throw"
+    - "Is an expression — returns the block's value"
+    - "Works with any Lock instance (including Mutex)"
+
+# ─── 8. Future<T> ────────────────────────────────────────────
+future:
+  description: "Handle returned by spawn, represents a running/completed thread"
+  api:
+    - "prop thread: Thread"
+    - "get(): T                    — blocks until done; rethrows thread exceptions"
+    - "get(timeout: Duration): T   — blocks with timeout; throws TimeoutException"
+    - "tryGet(): Option<T>         — non-blocking; None if not done"
+    - "cancel(): Unit              — cooperative cancel request"
+  notes:
+    - "get(timeout <= Duration.Zero) behaves like get() (no timeout)"
+    - "Placement of get() determines concurrency: before other work = serial; after = parallel"
+
+# ─── 9. Thread ────────────────────────────────────────────────
+thread:
+  api:
+    - "static prop currentThread: Thread"
+    - "prop id: Int64"
+    - "prop hasPendingCancellation: Bool"
+  notes:
+    - "Cannot be directly instantiated"
+    - "Obtained via Future.thread or Thread.currentThread"
+    - "Cancellation is cooperative: thread must check hasPendingCancellation"
+
+# ─── 10. ThreadLocal<T> ──────────────────────────────────────
+thread_local:
+  description: "Thread-isolated storage — each thread has independent value"
+  api:
+    - "init()"
+    - "get(): Option<T>          — None if not set"
+    - "set(value: Option<T>)     — pass None to delete"
+  note: "From core package (no special import needed)"
+
+# ─── 11. SyncCounter ─────────────────────────────────────────
+sync_counter:
+  import: "import std.sync.*"
+  purpose: "Coordinate multiple threads (like CountDownLatch)"
+  api:
+    - "SyncCounter(n: Int64)"
+    - "dec(): Unit"
+    - "waitUntilZero(): Unit"
+  example: |
+    import std.sync.*
+
+    main() {
+        let counter = SyncCounter(3)
+        for (i in 0..3) {
+            spawn { =>
+                println("task ${i}")
+                counter.dec()
+            }
+        }
+        counter.waitUntilZero()
+        println("all done")
+    }

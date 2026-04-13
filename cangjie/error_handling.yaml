@@ -1,0 +1,187 @@
+# Cangjie Language — Error Handling
+# Exception hierarchy, try/catch/finally, try-with-resources, Option-based errors
+
+# ─── 1. Exception Hierarchy ──────────────────────────────────
+hierarchy:
+  Error:
+    description: "Internal system/resource errors. Applications should NOT throw or extend Error."
+    api:
+      - "open prop message: String"
+      - "open func toString(): String"
+      - "func printStackTrace(): Unit"
+  Exception:
+    description: "Logical/IO/bounds errors. Developers CAN extend this."
+    api:
+      - "init() / init(message: String)"
+      - "open prop message: String"
+      - "open func toString(): String"
+      - "func printStackTrace(): Unit"
+    custom: |
+      open class AppException <: Exception {
+          public init(msg: String) { super(msg) }
+      }
+      class NotFoundError <: AppException {
+          public init(msg: String) { super(msg) }
+      }
+    rules:
+      - "Cannot extend Error or its subclasses"
+      - "Can extend Exception or its subclasses using <:"
+      - "Use 'open class' to allow further inheritance"
+
+  behavior: >
+    Exceptions are UNCHECKED — unhandled throws compile successfully
+    and crash at runtime with a stack trace. There are no checked exceptions.
+
+# ─── 2. throw ────────────────────────────────────────────────
+throw:
+  syntax: "throw exceptionExpr"
+  constraint: "Expression must be a subtype of Exception (cannot throw Error)"
+  type: "throw expression has type Nothing"
+  uncaught_handler: |
+    // Register custom handler for uncaught exceptions
+    Thread.handleUncaughtExceptionBy { thread: Thread, ex: Exception =>
+        println("Uncaught in ${thread.id}: ${ex}")
+    }
+
+# ─── 3. try / catch / finally ────────────────────────────────
+try_catch_finally:
+  syntax: |
+    try {
+        riskyOperation()
+    } catch (e: IllegalArgumentException) {
+        println("bad arg: ${e}")
+    } catch (e: IndexOutOfBoundsException | ArithmeticException) {
+        println("other: ${e}")
+    } catch (_) {
+        println("unknown exception")
+    } finally {
+        println("cleanup")
+    }
+
+  rules:
+    catch:
+      - "0 or more catch blocks"
+      - "First matching catch executes; rest are skipped"
+      - "Compiler warns on unreachable catch (shadowed by earlier catch)"
+    finally:
+      - "Always executes (with or without exception)"
+      - "Required when there are no catch blocks"
+      - "Avoid throwing in finally"
+      - "Executes even when exception is uncaught (then rethrows)"
+    scope: "Each try/catch block has independent scope"
+    type: "try expression type = least common supertype of try + all catch blocks (excludes finally)"
+
+  catch_patterns:
+    single_type: "e: ExceptionType — catches that type and subclasses"
+    union_type: "e: E1 | E2 | E3 — catches any listed type; binding type = common supertype"
+    wildcard: "_ — catches any exception (equivalent to e: Exception)"
+
+# ─── 4. try-with-resources ───────────────────────────────────
+try_with_resources:
+  purpose: "Automatic resource management"
+  syntax: |
+    // Resource must implement Resource interface
+    // interface Resource {
+    //     func isClosed(): Bool
+    //     func close(): Unit
+    // }
+
+    class FileHandle <: Resource {
+        var closed = false
+        public func isClosed(): Bool { closed }
+        public func close(): Unit { closed = true; println("closed") }
+        public func read(): String { "data" }
+    }
+
+    main() {
+        try (f = FileHandle()) {
+            println(f.read())  // data
+        }  // auto-calls f.close() if f.isClosed() == false
+        // Output: data
+        //         closed
+    }
+  rules:
+    - "Resources declared between try and {"
+    - "Multiple resources: try (r1 = ..., r2 = ...) { }"
+    - "catch/finally blocks are optional"
+    - "try-with-resources expression type is always Unit"
+    - "Resource variables scoped to the try body"
+
+# ─── 5. Option-Based Error Handling ──────────────────────────
+option_errors:
+  description: "Use Option<T> (?T) for fallible operations without exceptions"
+  patterns:
+    coalescing: "result ?? defaultValue"
+    optional_chain: "obj?.method()?.field"
+    get_or_throw: "opt.getOrThrow() — throws NoneValueException on None"
+    if_let: |
+      if (let Some(v) <- riskyOp()) {
+          use(v)
+      } else {
+          handleError()
+      }
+    match: |
+      match (riskyOp()) {
+          case Some(v) => use(v)
+          case None => handleError()
+      }
+
+# ─── 6. Built-in Runtime Exceptions ─────────────────────────
+builtin_exceptions:
+  - name: ArithmeticException
+    trigger: "Division by zero, overflow with @OverflowThrowing"
+  - name: ConcurrentModificationException
+    trigger: "Concurrent modification of a collection"
+  - name: IllegalArgumentException
+    trigger: "Invalid function argument"
+  - name: IllegalStateException
+    trigger: "Object in illegal state"
+  - name: IndexOutOfBoundsException
+    trigger: "Array/collection index out of range"
+  - name: NegativeArraySizeException
+    trigger: "Creating array with negative size"
+  - name: NoneValueException
+    trigger: "getOrThrow() called on None"
+  - name: OverflowException
+    trigger: "Integer overflow (subclass of ArithmeticException)"
+  - name: TimeoutException
+    trigger: "Operation timeout (e.g. Future.get(timeout))"
+  - name: IllegalSynchronizationStateException
+    trigger: "Illegal sync operation (e.g. unlock without lock); requires import std.sync.*"
+
+# ─── 7. Complete Example ─────────────────────────────────────
+complete_example: |
+  open class AppException <: Exception {
+      public init(msg: String) { super(msg) }
+  }
+  class NotFoundError <: AppException {
+      public init(msg: String) { super(msg) }
+  }
+
+  func findItem(id: Int64): String {
+      if (id <= 0) {
+          throw IllegalArgumentException("id must be positive")
+      }
+      if (id > 100) {
+          throw NotFoundError("item ${id} not found")
+      }
+      "item-${id}"
+  }
+
+  main() {
+      // try/catch with union pattern
+      try {
+          println(findItem(50))   // item-50
+          println(findItem(200))  // throws NotFoundError
+      } catch (e: NotFoundError) {
+          println("Not found: ${e.message}")
+      } catch (e: IllegalArgumentException | IllegalStateException) {
+          println("Bad input: ${e.message}")
+      } finally {
+          println("done")
+      }
+      // Output:
+      // item-50
+      // Not found: item 200 not found
+      // done
+  }
