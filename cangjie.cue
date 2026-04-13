@@ -31,13 +31,14 @@ package cangjie
 	controlKeywords: ["break", "case", "catch", "continue", "do",
 		"else", "finally", "for", "if", "in", "match",
 		"return", "spawn", "synchronized", "try", "throw", "while"]
-	declarationKeywords: ["abstract", "class", "const", "enum", "extend",
+	declarationKeywords: ["as", "abstract", "class", "const", "enum", "extend",
 		"foreign", "func", "import", "init", "interface",
 		"let", "macro", "main", "mut", "open", "operator",
 		"override", "package", "private", "prop", "protected",
 		"public", "redef", "sealed", "static", "struct",
 		"super", "this", "This", "type", "unsafe", "var", "where"]
 	literalKeywords: ["true", "false"]
+	otherKeywords: ["quote"]
 }
 
 // ============================================================
@@ -201,7 +202,7 @@ package cangjie
 		match:      "match (opt) { case Some(v) => v; case None => default }"
 		coalescing: "opt ?? defaultValue"
 		safeAccess: "opt?.member"
-		force:      "opt.getOrThrow()"
+		force:      "opt.getOrThrow()  // 返回 T 或抛 NoneValueException"
 	}
 }
 
@@ -581,7 +582,7 @@ package cangjie
 		withPayload: "let e = Expr.Num(42)"
 	}
 	rules: [
-		"枚举默认不支持 ==，需手动实现 operator func ==",
+		"枚举默认不支持 ==，可手动实现 operator func ==，或使用 @Derive[Equatable]（需 import std.deriving.*）",
 		"枚举可包含方法、属性、操作符重载",
 		"枚举变体可携带关联值",
 		"支持递归枚举定义",
@@ -639,8 +640,8 @@ package cangjie
 		hashMap: {
 			type:    "HashMap<K, V>"
 			create:  "HashMap<String, Int64>()"
-			methods: [".add(key, value)", ".contains(key)", ".remove(key)"]
-			access:  "map[key] = value  读: map[key]（键不存在时运行时异常）"
+			methods: [".add(key, value)", ".get(key): Option<V>", ".contains(key)", ".remove(key)", ".size", ".isEmpty()"]
+			access:  "map[key] = value  读: map[key]（键不存在时运行时异常）；安全读: map.get(key) 返回 Option<V>"
 		}
 		hashSet: {
 			type: "HashSet<T>"
@@ -701,7 +702,18 @@ package cangjie
 	spawn: {
 		syntax:  "spawn { => body }"
 		example: "spawn { => println(\"在新线程中执行\") }"
+		returns: "Future<T>，T 为 Lambda 返回类型"
 		rule:    "闭包不能捕获局部 var 变量（需用全局变量或原子类型）"
+	}
+	future: {
+		type: "Future<T>"
+		methods: [
+			"get(): T  // 阻塞等待结果，线程异常会重新抛出",
+			"get(timeout: Duration): T  // 带超时阻塞，超时抛 TimeoutException",
+			"tryGet(): Option<T>  // 非阻塞，未完成返回 None",
+			"cancel(): Unit  // 发送取消请求（协作式，不强制停止）",
+		]
+		property: "thread: Thread  // 获取关联的 Thread 对象"
 	}
 	synchronization: {
 		atomic: {
@@ -805,14 +817,16 @@ package cangjie
 		all:       "import std.collection.*"
 		selective: "import std.collection.{ArrayList, HashMap}"
 		single:    "import package.item"
+		multiPkg:  "import {pkg1.*, pkg2.*}"
+		rename:    "import pkg.name as newName"
 		reexport:  "public import package.item"
 	}
 	projectStructure: {
 		cjpmToml: """
 			[package]
-			name = \"myproject\"
-			cjc-version = \"1.0.5\"
-			output-type = \"executable\"
+			name = "myproject"
+			cjc-version = "1.0.5"
+			output-type = "executable"
 			
 			[dependencies]
 			"""
@@ -830,18 +844,18 @@ package cangjie
 		direct: """
 			extend String {
 			    public func printSize() {
-			        println(\"Size: ${this.size}\")
+			        println("Size: ${this.size}")
 			    }
 			}
 			"""
 		withInterface: """
 			extend<T> Array<T> <: Drawable {
-			    public func draw() { println(\"Array of ${this.size}\") }
+			    public func draw() { println("Array of ${this.size}") }
 			}
 			"""
 		generic: """
 			extend<T> Box<T> {
-			    public func info() { println(\"Box\") }
+			    public func info() { println("Box") }
 			}
 			"""
 		constrained: """
@@ -878,7 +892,7 @@ package cangjie
 			    let code: String
 			    const init(code: String) { this.code = code }
 			}
-			@Version[\"1.0\"]
+			@Version["1.0"]
 			class MyClass {}
 			"""
 	}
