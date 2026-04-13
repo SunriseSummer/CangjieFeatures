@@ -848,7 +848,7 @@ package cangjie
 		description: "可变长动态数组"
 		import:      "import std.collection.*"
 		constructor: "ArrayList<Int64>()"
-		methods:     ["append(elem)", "remove(index)", "size", "get(index)", "set(index, elem)"]
+		methods:     ["add(elem)", "remove(index)", "size", "get(index)", "set(index, elem)"]
 	}
 
 	hashMap: {
