@@ -1,6 +1,6 @@
 ﻿lexer:
   keywords:
-    type_keywords:
+    type:
       - Bool
       - Rune
       - Float16
@@ -20,41 +20,40 @@
       - Nothing
       - Unit
     control_flow:
-      - break
-      - case
-      - catch
-      - continue
-      - do
-      - else
-      - finally
-      - for
       - if
-      - in
-      - match
-      - return
-      - try
-      - throw
+      - else
       - while
+      - do
+      - for
+      - in
+      - break
+      - continue
+      - match
+      - case
+      - throw
+      - try
+      - catch
+      - finally
+      - return
     declaration:
+      - var
+      - let
+      - const
       - as
       - abstract
       - class
-      - const
       - enum
       - extend
       - func
-      - foreign
-      - import
       - init
       - interface
-      - let
-      - macro
       - main
       - mut
       - open
       - operator
       - override
       - package
+      - import
       - private
       - prop
       - protected
@@ -67,26 +66,24 @@
       - this
       - This
       - type
-      - unsafe
-      - var
       - where
-    boolean:
-      - false
-      - true
     concurrency:
       - spawn
       - synchronized
     ffi:
       - inout
+      - unsafe
+      - foreign
     macro:
+      - macro
       - quote
-    contextual_modifiers:
-      - sealed
-      - note: "Acts as a modifier before abstract class and interface declarations (e.g. sealed abstract class, sealed interface). Can be used as an identifier in other contexts."
-    builtin_type_names:
-      - Array
-      - String
-      - note: "Array and String are built-in type names, not reserved keywords. They can be used as identifiers (shadow the built-in type)."
+    boolean:
+      - "false"
+      - "true"
+
+  builtin_type_names:
+    - Array
+    - String
 
   delimiters:
     - "@"
