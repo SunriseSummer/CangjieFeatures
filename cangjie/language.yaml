@@ -168,7 +168,6 @@ symbol_catalog:
     - let_struct_cannot_call_mut
     - extend_cannot_add_stored_field
     - throw_requires_exception_subtype
-    - uncaught_exception
     - unsafe_context_required
     - foreign_param_not_ctype
     - annotation_target_mismatch

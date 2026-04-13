@@ -182,7 +182,9 @@
     instantiate_as: HashMap<K, V>
     import: std.collection.*
     notes:
-      - "Iteration order is not guaranteed. for ((k, v) in map) iterates tuples."
+      - "Use add(key, value) or map[key] = value to insert/update."
+      - "Use contains(key) before reading map[key]; missing-key reads throw NoneValueException."
+      - "Iteration order is not guaranteed; for ((k, v) in map) may differ from insertion order."
 
   - id: HashSet
     kind: generic
@@ -257,7 +259,7 @@
     instantiate_as: Future<T>
     notes:
       - "get() blocks until done (rethrows exception from spawned thread)."
-      - "get(timeout) throws TimeoutException."
+      - "get(timeout) blocks until done or timeout. Throws TimeoutException on timeout; timeout <= Duration.Zero behaves like get()."
       - "tryGet() returns Option<T> without blocking."
       - "cancel() is cooperative; thread must check hasPendingCancellation."
 
@@ -281,8 +283,9 @@
     summary: Condition variable created via mutex.condition(). Must be created while holding the lock.
     import: std.sync.*
     notes:
-      - "wait(): indefinite. wait(timeout): may throw TimeoutException."
-      - "waitUntil(predicate): loop-based wait (avoids spurious wakeups)."
+      - "wait() releases the associated lock while blocked and re-acquires it before returning."
+      - "wait(timeout): returns Bool (true = signaled, false = timeout). timeout <= Duration.Zero throws IllegalArgumentException."
+      - "waitUntil(predicate): Unit. waitUntil(predicate, timeout): Bool. Use these or a while-loop around wait() because spurious wakeups are allowed."
       - "notify() and notifyAll() to signal."
 
   - id: SyncCounter
@@ -409,7 +412,8 @@
     kind: reference
     summary: Base class for catchable exceptions. User-defined exceptions must inherit from Exception (not Error).
     notes:
-      - "API: init(), init(message), prop message: String, toString(), getClassName(), printStackTrace()."
+      - "API: init(), init(message), prop message: String, toString(), printStackTrace()."
+      - "User-defined exception classes should override getClassName(): String to report the subclass name."
       - "Built-in: ArithmeticException, IllegalArgumentException, IllegalStateException, IndexOutOfBoundsException, NegativeArraySizeException, NoneValueException, OverflowException (<: ArithmeticException), ConcurrentModificationException, TimeoutException, IllegalSynchronizationStateException."
 
   - id: Error
@@ -417,7 +421,7 @@
     summary: Internal system or resource exhaustion error. Applications should not throw or inherit Error.
     notes:
       - "API: init(), init(message), prop message: String, toString(), printStackTrace()."
-      - "No getClassName() unlike Exception."
+      - "Error has no getClassName(); custom application exceptions should inherit Exception instead."
 
   # ---- Reflection ----
   - id: TypeInfo

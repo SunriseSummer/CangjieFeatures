@@ -832,7 +832,7 @@
       - id: optional_chain_short_circuits
         op: short_circuit_evaluation
         target: "?."
-        note: "Supports member access, function calls, and subscript: opt?.member, opt?.func(), opt?.[i]."
+        note: "Supports member access/call, subscript, and optional-call forms: opt?.member, opt?.method(args), opt?[i], optFunc?(args), optFunc?{...}."
       - id: getOrThrow_throws_NoneValueException
         op: throws_on_none
       - id: none_explicit_type_hint
@@ -887,6 +887,9 @@
         op: inheritance_restricted_to
         base: Exception
         note: "Cannot extend Error or its subclasses."
+      - id: exceptions_are_unchecked
+        op: propagation_model
+        note: "Exceptions are unchecked: uncaught Exception values still compile and propagate to runtime."
       - id: try_expr_type
         op: try_result_type
         note: "try expression type = common parent of try block + all catch blocks (finally excluded)."
@@ -931,7 +934,7 @@
         note: "mutex.condition() must be called while holding the lock."
       - id: condition_wait_in_loop
         op: spurious_wakeup_pattern
-        note: "Use waitUntil(predicate) or loop with wait() + predicate check for spurious wakeups."
+        note: "Spurious wakeups are allowed. Prefer waitUntil(predicate) or loop with wait() + predicate re-check."
       - id: synchronized_auto_unlock
         op: synchronized_scoped
         note: "synchronized(mtx) { ... } auto-locks on enter, auto-unlocks on exit (including break/continue/return/throw)."

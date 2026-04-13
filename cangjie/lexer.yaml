@@ -16,9 +16,7 @@
       - UInt32
       - UInt64
       - UIntNative
-      - Array
       - VArray
-      - String
       - Nothing
       - Unit
     control_flow:
@@ -63,7 +61,6 @@
       - protected
       - public
       - redef
-      - sealed
       - static
       - struct
       - super
@@ -80,6 +77,11 @@
     other:
       - inout
       - quote
+    contextual:
+      - sealed
+    predefined_type_identifiers:
+      - Array
+      - String
 
   delimiters:
     - "@"
@@ -254,6 +256,7 @@
       unicode_standard: "15.0.0"
       normalized_form: NFC
       reserved_words_disallowed: true
+      note: Reserved keywords cannot be used as ordinary identifiers. Contextual/predefined names such as sealed, Array, and String can still be used as identifiers when grammar permits.
     raw:
       wrapper: "`identifier_or_keyword`"
       note: Allows using keywords as identifiers when escaped with backticks.
