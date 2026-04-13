@@ -261,7 +261,7 @@ package cangjie
 }
 
 // ============================================================
-// 3. 变量声明
+// 5. 变量声明
 // ============================================================
 
 #VariableDeclaration: {
@@ -295,7 +295,7 @@ package cangjie
 }
 
 // ============================================================
-// 4. 函数
+// 6. 函数
 // ============================================================
 
 #FunctionDeclaration: {
@@ -364,7 +364,7 @@ package cangjie
 }
 
 // ============================================================
-// 5. 控制流
+// 7. 控制流
 // ============================================================
 
 #IfExpression: {
@@ -443,7 +443,7 @@ package cangjie
 }
 
 // ============================================================
-// 6. 类型系统
+// 8. 类型系统
 // ============================================================
 
 #TypeSystem: {
@@ -483,7 +483,7 @@ package cangjie
 }
 
 // ============================================================
-// 7. 类 (class)
+// 9. 类 (class)
 // ============================================================
 
 #ClassDeclaration: {
@@ -583,7 +583,7 @@ package cangjie
 }
 
 // ============================================================
-// 8. 结构体 (struct)
+// 10. 结构体 (struct)
 // ============================================================
 
 #StructDeclaration: {
@@ -625,7 +625,7 @@ package cangjie
 }
 
 // ============================================================
-// 9. 接口 (interface)
+// 11. 接口 (interface)
 // ============================================================
 
 #InterfaceDeclaration: {
@@ -660,7 +660,7 @@ package cangjie
 }
 
 // ============================================================
-// 10. 枚举 (enum)
+// 12. 枚举 (enum)
 // ============================================================
 
 #EnumDeclaration: {
@@ -707,7 +707,7 @@ package cangjie
 }
 
 // ============================================================
-// 11. 泛型
+// 13. 泛型
 // ============================================================
 
 #Generics: {
@@ -730,7 +730,7 @@ package cangjie
 }
 
 // ============================================================
-// 12. 集合类型
+// 14. 集合类型
 // ============================================================
 
 #Collections: {
@@ -768,7 +768,7 @@ package cangjie
 }
 
 // ============================================================
-// 13. 错误处理
+// 15. 错误处理
 // ============================================================
 
 #ErrorHandling: {
@@ -810,7 +810,7 @@ package cangjie
 }
 
 // ============================================================
-// 14. 并发
+// 16. 并发
 // ============================================================
 
 #Concurrency: {
@@ -862,7 +862,7 @@ package cangjie
 }
 
 // ============================================================
-// 15. 操作符重载
+// 17. 操作符重载
 // ============================================================
 
 #OperatorOverloading: {
@@ -887,7 +887,7 @@ package cangjie
 }
 
 // ============================================================
-// 16. 模式匹配
+// 18. 模式匹配
 // ============================================================
 
 #PatternMatching: {
@@ -920,7 +920,7 @@ package cangjie
 }
 
 // ============================================================
-// 17. 包和导入
+// 19. 包和导入
 // ============================================================
 
 #PackageSystem: {
@@ -952,7 +952,7 @@ package cangjie
 }
 
 // ============================================================
-// 18. 扩展 (extend)
+// 20. 扩展 (extend)
 // ============================================================
 
 #Extension: {
@@ -989,7 +989,7 @@ package cangjie
 }
 
 // ============================================================
-// 19. 宏与注解
+// 21. 宏与注解（概要，详见 #MacroSystem 和 #ReflectionAndAnnotations）
 // ============================================================
 
 #MacrosAndAnnotations: {
@@ -1000,9 +1000,11 @@ package cangjie
 		call:       "@MacroName 或 @MacroName(...)"
 		quote:      "quote { let x = $(interpolatedValue) }"
 		import_:    "import std.ast.*"
+		macroPackage: "macro package <name>  // 宏须在独立包中定义"
 	}
 	builtInAnnotations: {
 		overflow: ["@OverflowThrowing", "@OverflowWrapping", "@OverflowSaturating"]
+		derive:   "@Derive[Equatable, Hashable, ...]  // 自动派生（需 import std.deriving.*）"
 		custom: """
 			@Annotation
 			class Version {
@@ -1014,13 +1016,13 @@ package cangjie
 			"""
 	}
 	reflection: {
-		import_: "import std.reflect.TypeInfo"
-		usage:   "let info = TypeInfo.of(obj)"
+		import_: "import std.reflect.*"
+		usage:   "TypeInfo.of(obj)、TypeInfo.of<T>()、TypeInfo.get(qualifiedName)"
 	}
 }
 
 // ============================================================
-// 20. 常量表达式
+// 22. 常量表达式
 // ============================================================
 
 #ConstExpressions: {
@@ -1042,7 +1044,7 @@ package cangjie
 }
 
 // ============================================================
-// 21. 入口函数
+// 23. 入口函数
 // ============================================================
 
 #MainFunction: {
@@ -1061,7 +1063,7 @@ package cangjie
 }
 
 // ============================================================
-// 22. 类型转换
+// 24. 类型转换
 // ============================================================
 
 #TypeConversion: {
@@ -1085,7 +1087,7 @@ package cangjie
 }
 
 // ============================================================
-// 23. 属性 (prop)
+// 25. 属性 (prop)
 // ============================================================
 
 #Property: {
@@ -1111,7 +1113,258 @@ package cangjie
 }
 
 // ============================================================
-// 24. 综合示例
+// 26. C 互操作 (FFI)
+// ============================================================
+
+#CFFI: {
+	kind: "feature"
+	foreignFunc: {
+		syntax:  "@C foreign func name(params): ReturnType"
+		block:   "foreign { func a(): Unit; func b(x: Int32): Int32 }"
+		rules: [
+			"参数和返回类型须满足 CType 约束",
+			"不支持命名参数和默认值",
+			"可变参数用 ... 作为最后一个参数",
+		]
+	}
+	cFunc: {
+		type:    "CFunc<(ParamTypes) -> ReturnType>"
+		declare: "@C func cangjieFunc(params): RetType { ... }  // 可被 C 调用"
+		lambda:  "CFunc 的 Lambda 不能捕获变量"
+		callRule: "调用 CFunc 须在 unsafe 上下文中"
+	}
+	inout: {
+		syntax: "unsafe { foreignFunc(inout myVar) }"
+		rules: [
+			"仅用于 CFunc 调用",
+			"必须为 var（不可用 let/字面量/临时值）",
+			"须满足 CType，不可为 CString",
+			"不可来自 class 实例成员",
+			"指针仅在调用期间有效",
+		]
+	}
+	typeMapping: {
+		primitives: "Unit↔void, Bool↔bool, Int8↔int8_t, ..., Float32↔float, Float64↔double"
+		cpointer: {
+			type:       "CPointer<T>"
+			operations: ["read(offset)", "write(offset, value)", "+/- offset", "toUIntNative()", "asResource()"]
+			null_:      "CPointer<T>()  // 空指针"
+		}
+		cstring: {
+			create: "LibC.mallocCString(str)"
+			free:   "LibC.free(cstr)"
+			auto:   "cstr.asResource()  // 配合 try-with-resource 自动释放"
+		}
+		cstruct: {
+			syntax: "@C struct MyStruct { var x: Int32; var y: Float64 }"
+			rules: [
+				"须满足 CType",
+				"不能实现接口/泛型/枚举关联值",
+			]
+		}
+		varray: "VArray<T, $N> 对应 C 的 T[N]"
+	}
+	memoryManagement: {
+		malloc:    "LibC.malloc<T>(count): CPointer<T>"
+		free:      "LibC.free<T>(ptr): Unit"
+		mallocStr: "LibC.mallocCString(str): CString"
+		freeStr:   "LibC.free(cstr): Unit"
+		arrayData: {
+			acquire: "acquireArrayRawData(arr): CPointerHandle<T>"
+			release: "releaseArrayRawData(handle): Unit"
+			rule:    "必须配对使用，中间不做复杂逻辑"
+		}
+		autoResource: "asResource() 返回 CPointerResource/CStringResource，配合 try (r = ...) { } 自动释放"
+	}
+}
+
+// ============================================================
+// 27. 不安全上下文 (unsafe)
+// ============================================================
+
+#UnsafeContext: {
+	kind: "feature"
+	syntax: {
+		unsafeFunc:  "unsafe func foo() { ... }"
+		unsafeBlock: "unsafe { expr }"
+		unsafeExpr:  "unsafe expr"
+	}
+	propagation: {
+		rule:     "调用 unsafe 函数须在 unsafe 上下文中（传染性）"
+		lambda:   "普通 Lambda 不传播 unsafe，内部须显式 unsafe { }"
+		applies:  ["foreign 函数", "@C 函数", "CFunc 调用", "unsafe 函数", "CPointer 操作"]
+	}
+}
+
+// ============================================================
+// 28. 宏系统（详细）
+// ============================================================
+
+#MacroSystem: {
+	kind: "feature"
+	concept: "编译期代码变换：输入 Tokens → 输出 Tokens，展开为有效仓颉代码"
+	macroPackage: {
+		declaration: "macro package myMacroLib"
+		rule:        "宏定义必须在独立的 macro package 中，不能与调用方同包"
+		build:       "cjc --compile-macro（宏包先编译）；cjpm 中: compile-option = '--compile-macro'"
+	}
+	nonAttrMacro: {
+		definition: "public macro MacroName(input: Tokens): Tokens { ... }"
+		call:       "@MacroName(expr) 或 @MacroName 前置于声明"
+		targets:    ["func", "struct", "class", "enum", "interface", "extend", "var", "prop"]
+	}
+	attrMacro: {
+		definition: "public macro Foo(attrTokens: Tokens, inputTokens: Tokens): Tokens { ... }"
+		call:       "@Foo[attrContent] 前置于声明  或 @Foo[attrContent](inputContent)"
+		rule:       "2 参数定义 → 必须用 []；1 参数定义 → 不用 []"
+	}
+	quoteAndInterpolation: {
+		quote:       "quote(code) → Tokens"
+		interpolate: "$(expr) 在 quote 中插入 ToTokens 表达式"
+		toTokens:    "AST 节点、Token/Tokens、基本类型、Array<T>、ArrayList<T> 均实现 ToTokens"
+		escapeRules: ["不匹配的 () → \\( \\)", "字面 $ → \\$", "输入 @ → \\@"]
+	}
+	nestedMacros: {
+		expansion: "由内向外展开（内层先展开）"
+		context: {
+			assert: "assertParentContext(\"OuterMacroName\")  // 非嵌套则报错"
+			check:  "insideParentContext(\"OuterMacroName\"): Bool"
+		}
+		messaging: {
+			inner: "setItem(\"key\", \"value\")  // 内层宏设置消息"
+			outer: "getChildMessages(\"InnerMacroName\")  // 外层宏获取消息"
+		}
+	}
+	stdAst: {
+		import_:   "import std.ast.*"
+		tokenKind: "TokenKind 枚举（ADD, IDENTIFIER, ...）"
+		parsing:   ["parseExpr", "parseDecl", "parseType", "parsePattern", "parseProgram"]
+		nodeHierarchy: "Node → Expr/Decl/TypeNode/Pattern → FuncDecl/ClassDecl/BinaryExpr/..."
+		visitor:   "Visitor 抽象类 + traverse() 遍历"
+		utility:   ["cangjieLex(String): Tokens", "compareTokens(a, b)", "diagReport(level, tokens, msg, hint)"]
+	}
+}
+
+// ============================================================
+// 29. 反射与注解（详细）
+// ============================================================
+
+#ReflectionAndAnnotations: {
+	kind: "feature"
+	overflowAnnotations: {
+		throwing:   "@OverflowThrowing   // 默认，溢出抛 ArithmeticException"
+		wrapping:   "@OverflowWrapping   // 截断高位（取模）"
+		saturating: "@OverflowSaturating // 钳位到类型最大/最小值"
+		scope:      "仅用于函数声明"
+		applies:    ["+", "-", "*", "/", "**", "++", "--", "<<"]
+	}
+	customAnnotation: {
+		definition: """
+			@Annotation
+			class MyAnnotation {
+			    let value: String
+			    const init(value: String) { this.value = value }
+			}
+			"""
+		apply:   "@MyAnnotation[\"info\"] class MyClass { ... }"
+		rules: [
+			"不能为 abstract/open/sealed",
+			"必须有 const init",
+			"每个目标最多应用一次",
+			"不被子类继承",
+			"参数必须为 const 表达式",
+		]
+		targets: {
+			annotationKind: ["Type", "Parameter", "Init", "MemberProperty", "MemberFunction", "MemberVariable"]
+			restrict:       "@Annotation[target: [AnnotationKind.Type, AnnotationKind.Init]]"
+		}
+	}
+	typeInfoAPI: {
+		import_: "import std.reflect.*"
+		obtain: {
+			fromInstance: "TypeInfo.of(instance: Any)"
+			fromClass:    "ClassTypeInfo.of(obj: Object)  // 推荐"
+			fromType:     "TypeInfo.of<T>()"
+			fromName:     "TypeInfo.get(\"module.package.type\")  // 抛 InfoNotFoundException"
+		}
+		memberAccess: {
+			staticVar:    "typeInfo.getStaticVariable(name)"
+			instanceVar:  "typeInfo.getInstanceVariable(name)"
+			instanceProp: "typeInfo.getInstanceProperty(name)"
+			staticFunc:   "typeInfo.getStaticFunction(name, paramTypes...)"
+			getValue:     "varInfo.getValue() / varInfo.getValue(obj)"
+			setValue:     "varInfo.setValue(value) / varInfo.setValue(obj, value)"
+			apply:        "funcInfo.apply(typeInfo, args: Array)"
+		}
+		constraints: [
+			"仅可访问 public 成员",
+			"未实例化的泛型类型无法获取 TypeInfo",
+			"限定名格式：module.package.type",
+		]
+	}
+	findAnnotation: "typeInfo.findAnnotation<MyAnnotation>()"
+}
+
+// ============================================================
+// 30. 项目管理 (cjpm)
+// ============================================================
+
+#ProjectManagement: {
+	kind: "feature"
+	commands: {
+		init:      "cjpm init --name <name> --type=<executable|static|dynamic|workspace>"
+		build:     "cjpm build [-i] [-j N] [-g] [--coverage] [-o name] [--target <triple>]"
+		run:       "cjpm run [--run-args \"...\"] [--skip-build]"
+		test:      "cjpm test [pkgs] [--filter pattern] [--timeout-each 10s] [--parallel N]"
+		bench:     "cjpm bench [--report-format csv|json] [--baseline-path path]"
+		clean:     "cjpm clean [--coverage]"
+		check:     "cjpm check  // 打印编译顺序或报告循环依赖"
+		update:    "cjpm update  // 同步 cjpm.toml → cjpm.lock"
+		tree:      "cjpm tree [-V] [--depth N]  // 可视化依赖树"
+		install:   "cjpm install --path . 或 --git <url> --tag <tag>"
+		uninstall: "cjpm uninstall <module>"
+	}
+	cjpmToml: {
+		package_: {
+			required: ["name", "cjc-version", "output-type = executable|static|dynamic"]
+			optional: ["version", "description", "compile-option", "link-option", "src-dir", "target-dir"]
+		}
+		workspace: {
+			fields: ["members = [\"mod1\", \"mod2\"]", "build-members", "test-members"]
+			rule:   "[workspace] 与 [package] 互斥"
+		}
+		dependencies: {
+			local: "name = { path = './path' }"
+			git:   "name = { git = 'url', tag|branch|commitId = '...' }"
+			sections: ["[dependencies]", "[test-dependencies]  // 仅 *_test.cj", "[script-dependencies]  // 仅 build.cj"]
+		}
+		ffiC:    "[ffi.c] lib = { path = './src/' }  // 预编译 C 库"
+		replace: "[replace] dep = { path = './local' }  // 覆盖传递依赖"
+		profile: {
+			build: "[profile.build] lto/incremental"
+			test:  "[profile.test] filter/timeout-each/parallel/mock"
+			bench: "[profile.bench] report-format/baseline-path"
+			custom: "[profile.customized-option] feature_x = '--cfg=...'"
+		}
+		target: {
+			syntax: "[target.x86_64-unknown-linux-gnu]"
+			fields: ["compile-option", "link-option", "dependencies", "bin-dependencies"]
+		}
+		subPackage: "[package.package-configuration.sub_pkg]  // 子包独立配置"
+		envSubst:   "${ENV_VAR} 可用于 compile-option/link-option/target-dir/members/path"
+	}
+	buildScript: {
+		location: "项目根目录 build.cj"
+		hooks:    ["pre-build", "post-build", "pre-test", "post-test", "pre-bench", "post-bench", "pre-run", "post-run", "pre-clean"]
+		return:   "0 = 成功，非 0 = 失败"
+		skip:     "--skip-script 跳过"
+	}
+	lockFile: "cjpm.lock 确保可重现构建，cjpm update 刷新"
+	extension: "cjpm-xxx 可执行文件 → cjpm xxx [args] 调用"
+}
+
+// ============================================================
+// 31. 综合示例
 // ============================================================
 
 #ComprehensiveExample: {
