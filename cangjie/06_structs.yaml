@@ -88,7 +88,13 @@ mutability:
       println(c.count)  // 1
 
   value_semantics_demo: |
-    var a = Point(1.0, 2.0)
+    struct MutPoint {
+        var x: Float64 = 0.0
+        var y: Float64 = 0.0
+    }
+    var a = MutPoint()
+    a.x = 1.0
+    a.y = 2.0
     var b = a          // b is a copy of a
     b.x = 10.0        // only b is modified
     println(a.x)      // still 1.0

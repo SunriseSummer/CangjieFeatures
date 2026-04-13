@@ -131,7 +131,7 @@ operators:
     - level: 10
       ops: ["..="]
       assoc: none
-      note: "Range (end-inclusive, with step)"
+      note: "Range (fully inclusive)"
     - level: 11
       ops: ["<", "<=", ">", ">="]
       assoc: none

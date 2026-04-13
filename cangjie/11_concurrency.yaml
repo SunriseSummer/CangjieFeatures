@@ -117,6 +117,7 @@ synchronization:
       // Note: mtx must be locked before calling condition()
       mtx.lock()
       let cond = mtx.condition()
+      mtx.unlock()
       var ready = false
 
       // Consumer
