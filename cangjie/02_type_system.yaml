@@ -27,12 +27,14 @@ built_in_types:
   character:
     type: Rune
     description: "Unicode scalar value (same as UInt32 range)"
-    conversion: "UInt32(rune) / Rune(uint32)"
+    conversion: |
+      let code = UInt32(myRune)    // Rune to UInt32
+      let ch = Rune(65)            // UInt32 to Rune ('A')
   string:
     type: String
     description: "UTF-8 encoded, immutable"
     interpolation: '"Hello, ${expr}!"'
-    multiline: '"""triple-quoted"""'
+    multiline: '"""triple-quoted"""  # preserves content including indentation'
     indexing: "s[i] returns Byte; iterate with for (r in s) for Rune"
   unit:
     type: Unit
@@ -50,14 +52,14 @@ built_in_types:
   array:
     fixed_size:
       type: "Array<T>"
-      create: "Array<Int64>(5, item: 0)  # size=5, fill with 0"
+      create: "Array<Int64>(5, repeat: 0)  # size=5, fill with 0"
       literal: "[1, 2, 3]"
       access: "arr[i]  # zero-based indexing"
       note: "Reference type; fixed size after creation"
     varray:
       type: "VArray<T, $N>"
       description: "Fixed-size value-type array; N is compile-time constant"
-      create: "VArray<Int64, $3>(item: 0)"
+      create: "VArray<Int64, $3>(repeat: 0)"
 
   range:
     types:
@@ -95,9 +97,10 @@ type_conversions:
       let x: Int64 = Int64(myInt8)
       let y: Float64 = Float64(myInt32)
   rune: |
-    Rune ↔ UInt32:
-      let code = UInt32('A')   // 65
-      let ch = Rune(65)        // 'A'
+    Rune → UInt32 requires passing a Rune variable (not literal):
+      let ch: Rune = 'A'
+      let code = UInt32(ch)   // 65
+      let ch2 = Rune(65)     // 'A'
   type_check:
     syntax: "expr is Type"
     result: Bool

@@ -64,8 +64,8 @@ thread_class:
 
 synchronization:
   atomic:
-    type: "Atomic<T>"
-    supported_types: "Int8-64, UInt8-64, Bool, reference types"
+    description: "Typed atomic wrappers for lock-free operations"
+    types: "AtomicInt8, AtomicInt16, AtomicInt32, AtomicInt64, AtomicUInt8-64, AtomicBool, AtomicReference<T>"
     operations:
       basic: ["load()", "store(val)", "swap(val)", "compareAndSwap(old, new): Bool"]
       integer_only: |
@@ -73,20 +73,22 @@ synchronization:
         fetchAnd(val), fetchOr(val), fetchXor(val)
         // All return value BEFORE the operation
     example: |
-      let counter = Atomic<Int64>(0)
+      import std.sync.*
+      let counter = AtomicInt64(0)
       spawn { => counter.fetchAdd(1) }
       spawn { => counter.fetchAdd(1) }
       sleep(Duration.millisecond * 100)
       println(counter.load())  // 2
 
   mutex:
-    type: "ReentrantMutex"
+    type: "Mutex"
     methods:
       - "lock(): Unit       // block until acquired"
       - "unlock(): Unit     // release lock"
       - "tryLock(): Bool    // non-blocking attempt"
     example: |
-      let mtx = ReentrantMutex()
+      import std.sync.*
+      let mtx = Mutex()
       mtx.lock()
       try {
           // critical section
@@ -102,15 +104,18 @@ synchronization:
     note: "Preferred over manual lock/unlock for safety"
 
   condition_variable:
-    creation: "let cond = mtx.condition()"
+    creation: "let cond = mtx.condition()  // mutex must be locked"
     methods:
       - "wait(): Unit                           // release lock and wait"
-      - "wait(timeout: Duration): Bool           // wait with timeout; false on timeout"
-      - "notifyOne(): Unit                       // wake one waiting thread"
-      - "notifyAll(): Unit                       // wake all waiting threads"
+      - "wait(timeout: Duration): Bool            // wait with timeout; false on timeout"
+      - "notify(): Unit                           // wake one waiting thread"
+      - "notifyAll(): Unit                        // wake all waiting threads"
     pattern: |
       // Producer-consumer pattern
-      let mtx = ReentrantMutex()
+      import std.sync.*
+      let mtx = Mutex()
+      // Note: mtx must be locked before calling condition()
+      mtx.lock()
       let cond = mtx.condition()
       var ready = false
 
@@ -131,10 +136,10 @@ synchronization:
 
   thread_local:
     syntax: |
-      let tls = ThreadLocal<Int64>(0)  // initial value factory or value
+      let tls = ThreadLocal<Int64>()  // from core package, no import needed
     usage: |
-      tls.get()       // get thread-local value
-      tls.set(42)     // set thread-local value
+      tls.set(42)            // set thread-local value
+      tls.get()              // returns Option<T> — Some(v) or None
 
 cancellation:
   mechanism: |

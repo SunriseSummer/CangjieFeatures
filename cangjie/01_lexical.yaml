@@ -207,13 +207,13 @@ literals:
     multi_line: |
       let s = """
           multi-line string
-          indentation stripped by closing quotes position
+          preserves content as-is including indentation
           supports ${interpolation}
           """
     raw: |
       #"raw string \n not escaped"#
       ##"can contain "# inside"##
-    byte_string: 'b"hello"  # Array<Byte> literal'
+    byte_literal: "b'A'  # UInt8 byte literal (ASCII character)"
   array: "[1, 2, 3]      # Array<Int64>"
   tuple: "(1, true, 3.0) # (Int64, Bool, Float64)"
   range:

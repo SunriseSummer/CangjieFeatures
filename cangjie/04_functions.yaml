@@ -49,10 +49,10 @@ function_declaration:
 
 lambda_and_closures:
   lambda_syntax:
-    full: "{ (x: Int64, y: Int64) => x + y }"
+    typed: "{ x: Int64, y: Int64 => x + y }  # types on params directly"
     inferred: "{ x => x * 2 }  # parameter type inferred from context"
     no_param: "{ => println(\"hello\") }"
-    single_expr: "{ x: Int64 => x + 1 }  # braces required"
+    note: "Braces are always required; parameters come before =>"
 
   trailing_lambda:
     description: "When last parameter is a function, lambda can follow the call"
@@ -68,14 +68,17 @@ lambda_and_closures:
   closures:
     description: "Lambdas capture variables from enclosing scope"
     capture_rules:
-      - "Value types: captured by copy at closure creation time"
-      - "Reference types: captured by reference (shared)"
-      - "Mutable captured variables (var) form shared reference cells"
-    example: |
+      - "Immutable (let) variables: captured freely"
+      - "Mutable (var) variables: lambda that captures var CANNOT be stored — must be called directly"
+    immutable_capture: |
+      let base = 100
+      let addBase = { x: Int64 => x + base }
+      println(addBase(5))  // 105
+    mutable_capture_restriction: |
       var count = 0
-      let inc = { => count += 1 }
-      inc()
-      println(count)  // 1
+      // Cannot assign to variable: { => count += 1 }
+      // Must call directly or use a class wrapper:
+      { => count += 1 }()  // call directly — OK
 
   function_types:
     syntax: "(ParamTypes) -> ReturnType"
@@ -107,7 +110,8 @@ operator_overloading:
   subscript_get: |
     operator func [](index: Int64): T { ... }
   subscript_set: |
-    operator func []=(index: Int64, value: T): Unit { ... }
+    operator func [](index: Int64, value!: T): Unit { ... }
+    // invoked as: obj[index] = value
   call_operator: |
     operator func ()(args: Type): ReturnType { ... }
   example: |
