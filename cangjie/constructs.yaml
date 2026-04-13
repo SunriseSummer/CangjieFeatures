@@ -665,7 +665,7 @@
         diagnostic: duplicate_top_level_symbol
       - id: no_default_equatable
         op: requires_manual_operator
-        note: "Enums do not support == by default. Implement operator func ==(rhs: EnumType): Bool and !=(rhs: EnumType): Bool inside the enum body using match-based comparison."
+        note: "Enums do not support == by default. Use @Derive[Equatable] (from std.deriving) to auto-generate, or implement operator func ==(rhs: EnumType): Bool and !=(rhs: EnumType): Bool inside the enum body using match-based comparison."
       - id: recursive_enum_via_payload
         op: recursive_constructor_allowed
         note: "Constructor parameters can reference the enum type itself (recursive enum)."
@@ -840,7 +840,7 @@
         target: "??"
       - id: optional_chain_short_circuits
         op: short_circuit_evaluation
-        target: "?."
+        target: "?"
         note: "Supports member access, function calls, subscript, and trailing lambda: opt?.member, opt?.func(), opt?[i], opt?{lambda}."
       - id: getOrThrow_throws_NoneValueException
         op: throws_on_none

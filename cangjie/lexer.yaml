@@ -32,7 +32,6 @@
       - in
       - match
       - return
-      - spawn
       - try
       - throw
       - while
@@ -61,10 +60,10 @@
       - protected
       - public
       - redef
+      - sealed
       - static
       - struct
       - super
-      - synchronized
       - this
       - This
       - type
@@ -72,10 +71,14 @@
       - var
       - where
     boolean:
-      - "false"
-      - "true"
-    other:
+      - false
+      - true
+    concurrency:
+      - spawn
+      - synchronized
+    ffi:
       - inout
+    macro:
       - quote
     contextual_modifiers:
       - sealed
