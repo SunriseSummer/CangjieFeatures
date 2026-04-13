@@ -233,12 +233,7 @@
     syntax:
       canonical: |
         struct Vec2 {
-            var x: Float64 = 0.0
-            var y: Float64 = 0.0
-            public init(x: Float64, y: Float64) {
-                this.x = x
-                this.y = y
-            }
+            public Vec2(var x: Float64, var y: Float64) {}
             public operator func +(r: Vec2): Vec2 {
                 Vec2(x + r.x, y + r.y)
             }
@@ -382,12 +377,15 @@
     summary: Iterate over Iterable sources with optional destructuring and where filtering. Returns Unit.
     syntax:
       canonical: |
-        for (i in 0..=10 where i % 2 == 0) {
-            println(i)
+        for (item in collection) {
+            println(item)
         }
       variants:
-        - "for ((k, v) in pairs) { println(k) }"
-        - "for (_ in 0..5) { println(\"tick\") }"
+        - "for (i in 0..5)"
+        - "for (_ in 0..5)"
+        - "for (i in 0..=10 where i % 2 == 0)"
+        - "for (i in 0..=10:2)"
+        - "for ((k, v) in tuples)"
     semantic_rules:
       - id: source_must_be_iterable
         op: expression_implements_interface
@@ -420,20 +418,27 @@
     summary: Pattern matching expression with exhaustive coverage. First matching case wins.
     syntax:
       canonical: |
-        match (value) {
-            case Some(x) => x
-            case None => 0
+        match (rune) {
+            case r'🔥' => "Summer"
+            case r'❄' => "Winter"
+            case _ => "Comfortable"
         }
       variants:
         - |
-          match {
-              case x > 0 => "positive"
-              case _ => "non-positive"
+          match (enum_action) {
+              case Left(dx) => x -= dx
+              case Up(dy) => y += dy
+              case _ => () // do nothing
           }
         - |
           match (value) {
               case x where x > 0 => "positive"
               case _ => "other"
+          }
+        - |
+          match {
+              case x > 0 => "positive"
+              case _ => "non-positive"
           }
     semantic_rules:
       - id: case_order_significant
