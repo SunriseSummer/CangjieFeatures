@@ -1,0 +1,313 @@
+# Cangjie Language — Types
+# Classes, structs, interfaces, enums, type system
+
+# ─── 1. Classes ───────────────────────────────────────────────
+class:
+  definition:
+    syntax: "class ClassName { ... }"
+    scope: "Top-level only"
+    semantics: reference type (assignment shares object)
+
+  abstract_class:
+    syntax: "abstract class Name { ... }"
+    rules:
+      - "Can declare abstract functions (no body)"
+      - "Cannot be instantiated"
+      - "Abstract functions cannot be private"
+      - "'open' modifier optional on abstract class itself"
+    sealed: "sealed abstract class — inheritable only within the same package"
+
+  member_variables:
+    instance: "let/var fields, accessed via object"
+    static: "static let/var, accessed via type name, must be initialized"
+
+  static_initializer:
+    syntax: "static init() { ... }"
+    rules: "At most one per class. No access modifiers. Must init all uninitialized static members."
+
+  constructors:
+    regular:
+      syntax: "init(params) { ... }"
+      rules:
+        - "Must initialize all uninitialized instance member variables"
+        - "Multiple constructors must form valid overloads"
+    primary:
+      syntax: |
+        class Pair {
+            public Pair(let first: Int64, let second: Int64) {}
+        }
+      note: >
+        Primary constructor is written INSIDE the class body with the class name.
+        Parameters prefixed with let/var simultaneously define member variables.
+        At most one per class.
+    auto_generated: >
+      If no custom constructors AND all instance members have initial values,
+      compiler generates a public no-arg init().
+    execution_order:
+      - "1. Member default value initialization"
+      - "2. Implicit/explicit super() call"
+      - "3. Constructor body"
+
+  finalizer:
+    syntax: "~init() { ... }"
+    purpose: "Called during garbage collection for resource cleanup"
+    rules:
+      - "No params, no return type, no modifiers, cannot be called explicitly"
+      - "Class with finalizer cannot be 'open'"
+      - "Timing is non-deterministic; may run on any thread"
+      - "At most one per class; cannot be defined in extensions"
+
+  member_functions:
+    instance: "Accessed via object, can use 'this'"
+    static: "static func — accessed via type name, cannot access instance members"
+    abstract: "No body, only in abstract class/interface. Implicitly open."
+    restriction: "Static and instance methods CANNOT share the same name in a type"
+
+  properties:
+    read_only: "prop name: Type { get() { ... } }"
+    read_write: "mut prop name: Type { get() { ... } set(v) { ... } }"
+    note: "Accessing property inside its own getter/setter = recursive call"
+    modifiers: "Supports open, override, redef, access modifiers"
+    abstract: "In abstract class: property without implementation body"
+
+  this_type:
+    description: "'This' inside a class refers to the current class type"
+    usage: "Only as instance method return type; subclass inherits with subclass type"
+
+  inheritance:
+    syntax: "class Child <: Parent { }"
+    rules:
+      - "Single inheritance only"
+      - "Parent must be 'open' or 'abstract'"
+      - "Class without explicit parent inherits from Object"
+    sealed_class: "sealed abstract class — inheritable only within same package"
+    super_call:
+      rule: "super(args) or this(args) as FIRST expression in init body (mutually exclusive)"
+      auto: "If neither called, compiler inserts super() — parent must have no-arg constructor"
+    override:
+      instance: "Parent method must be 'open'; child uses 'override' (optional keyword)"
+      static: "Child uses 'redef' (optional keyword)"
+      dispatch: "Instance: dynamic (runtime type). Static: static (declared type)."
+
+  access_modifiers:
+    private: "Visible only within the type definition"
+    internal: "Current package and subpackages (DEFAULT)"
+    protected: "Current module and subclasses"
+    public: "Globally visible"
+
+  example: |
+    abstract class Shape {
+        public func area(): Float64
+    }
+
+    class Circle <: Shape {
+        let radius: Float64
+        public init(r: Float64) { radius = r }
+        public func area(): Float64 { 3.14159 * radius * radius }
+    }
+
+    main() {
+        let c = Circle(5.0)
+        println(c.area())  // 78.539750
+    }
+
+# ─── 2. Structs ──────────────────────────────────────────────
+struct:
+  definition:
+    syntax: "struct Name { ... }"
+    scope: "Top-level only"
+    semantics: "Value type — assignment/passing creates a COPY (shallow)"
+
+  constructors:
+    regular: "init(params) { ... } — must init all uninitialized instance members"
+    primary: |
+      struct Rectangle {
+          public Rectangle(let width: Int64, let height: Int64) {}
+      }
+    auto_generated: >
+      If no custom constructors AND all instance members have initial values →
+      auto-generates public init(). Does NOT generate a parameterized constructor.
+
+  member_functions:
+    instance: "Via instance, can use 'this'"
+    static: "static func — via type name"
+    restriction: "Static and instance methods cannot share the same name"
+
+  mut_functions:
+    purpose: "Instance methods that can modify the struct's member variables in-place"
+    syntax: |
+      struct Counter {
+          var count: Int64 = 0
+          public mut func increment() { count += 1 }
+      }
+
+      main() {
+          var c = Counter()   // must be 'var' to call mut functions
+          c.increment()
+          println(c.count)    // 1
+      }
+    rules:
+      - "'let' struct variables CANNOT call mut functions"
+      - "Non-mut functions CANNOT call mut functions"
+      - "mut functions CAN call non-mut functions"
+      - "'this' cannot be captured by lambdas or used as a return value in mut functions"
+      - "Cannot be static"
+      - "Can modify operator functions (mut operator func)"
+    interface_interaction:
+      struct_must_match: "struct must match mut modifier exactly"
+      class_ignores: "class ignores mut when implementing interface"
+      copy_on_assign: "Assigning struct to interface type variable copies — mut changes affect the copy only"
+
+  modification_rules:
+    - "Variable holding struct must be 'var'"
+    - "Field being modified must be declared 'var'"
+
+  no_recursion: "Direct and indirect recursive structs are compile errors"
+
+  properties: "Same rules as class (prop / mut prop)"
+  access_modifiers: "Same as class (private, internal, protected, public)"
+
+# ─── 3. Interfaces ───────────────────────────────────────────
+interface:
+  definition:
+    syntax: "interface Name { ... }"
+    members: "Functions, operator functions, properties (prop)"
+    implicit: "All members are implicitly public and open"
+
+  implementation:
+    syntax: "class Foo <: InterfaceName { ... }"
+    multiple: "class C <: I1 & I2 & I3 { ... }"
+    implementable_types: "All types except Tuple, VArray, and function types"
+    rules:
+      - "Must implement all interface members with 'public' access"
+      - "Function signatures must match (name, params, return type)"
+      - "Exception: implementation can return a subtype of the interface return type"
+
+  inheritance:
+    syntax: "interface I3 <: I1 & I2 { ... }"
+    rules:
+      - "Interfaces can inherit from one or more interfaces (not classes)"
+      - "Implementation of child interface requires implementing all parent interface members"
+
+  default_implementations:
+    instance: |
+      interface SayHi {
+          func say(): String { "hi" }  // default implementation
+      }
+      class A <: SayHi {}              // inherits default
+    static: |
+      interface NamedType {
+          static func typename(): String { "NamedType" }
+      }
+    in_generics: |
+      // Static members without defaults are useful in generic constraints
+      func printTypeName<T>() where T <: NamedType {
+          println(T.typename())
+      }
+
+  sealed_interface:
+    syntax: "sealed interface Name { ... }"
+    rule: "Can only be implemented/inherited within the same package"
+
+  diamond_inheritance:
+    resolution: >
+      If multiple inherited interfaces provide conflicting default implementations
+      for the same member, the implementing type MUST provide its own implementation.
+
+  any_type:
+    description: "Built-in interface: interface Any {}"
+    rule: "All interfaces inherit Any; all non-interface types implement Any. Every type is a subtype of Any."
+
+  generic_members: |
+    interface M {
+        func foo<T>(a: T): T
+        static func bar<T>(b: T): String where T <: ToString
+    }
+
+# ─── 4. Enums ────────────────────────────────────────────────
+enum:
+  definition:
+    syntax: |
+      enum Direction {
+          | Up | Down | Left | Right
+      }
+    rules:
+      - "Use 'enum' keyword, top-level only"
+      - "Constructors separated by '|' (first '|' optional)"
+      - "Must have at least one named constructor"
+      - "Constructor names cannot be keywords (use backtick escaping: `Bool`)"
+    parameterized: |
+      enum Expr {
+          | Num(Int64)
+          | Add(Expr, Expr)       // recursive enum is supported
+          | Neg(Expr)
+      }
+    same_name_constructors: "Allowed when parameter counts differ"
+    non_exhaustive: |
+      enum Token {
+          | Number | Plus | Minus | ...  // '...' makes it non-exhaustive
+      }
+      // Must use _ or binding pattern in match (cannot match ... directly)
+
+  usage:
+    create: |
+      let d = Direction.Up        // qualified
+      let d2 = Up                 // unqualified (if no name conflict)
+      let e = Num(42)             // parameterized
+    name_conflict: "When constructor name conflicts with a variable/function, use TypeName.Constructor"
+
+  members:
+    functions: |
+      enum Color {
+          | Red | Green | Blue
+          public func name(): String {
+              match (this) {
+                  case Red => "Red"
+                  case Green => "Green"
+                  case Blue => "Blue"
+              }
+          }
+      }
+    properties: "Can have prop definitions"
+    restriction: "Member names cannot collide with constructor names"
+
+  equality:
+    default: "Enums do NOT support == by default"
+    derive: |
+      import std.deriving.*
+
+      @Derive[Equatable]
+      enum Color {
+          | Red | Green | Blue
+      }
+
+      main() {
+          println(Color.Red == Color.Red)  // true
+      }
+
+# ─── 5. Type System ──────────────────────────────────────────
+type_system:
+  subtyping:
+    class_inheritance: "Child <: Parent"
+    interface_implementation: "Implementor <: Interface"
+    tuple: "Covariant — (A1, A2) <: (B1, B2) when A1 <: B1 and A2 <: B2"
+    function: "Contravariant in params, covariant in return: (B) -> A <: (A) -> B when A <: B (params) and A <: B (return)"
+    nothing: "Nothing is a subtype of ALL types"
+    any: "Every type is a subtype of Any"
+
+  type_checking:
+    is: "expr is Type → Bool (runtime type check)"
+    as: "expr as Type → Option<Type> (safe cast)"
+
+  type_alias:
+    syntax: "type Alias = OriginalType"
+    example: "type StringList = Array<String>"
+
+  variance:
+    user_defined: "All user-defined generic types are INVARIANT in all type parameters"
+    builtin_exceptions:
+      tuple: "Covariant in each element"
+      function: "Contravariant in params, covariant in return"
+
+  numeric_conversion:
+    rule: "No implicit numeric conversions — use constructor syntax: Int64(someInt32)"

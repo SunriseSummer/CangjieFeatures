@@ -1,0 +1,224 @@
+# Cangjie Language — C Interop (FFI)
+# Foreign functions, type mapping, unsafe blocks, memory management
+
+# ─── 1. Foreign Function Declaration ─────────────────────────
+foreign_functions:
+  syntax: |
+    @C
+    foreign func rand(): Int32
+    foreign func printf(fmt: CString, ...): Int32  // variadic
+
+    main() {
+        let r = unsafe { rand() }
+        println(r)
+    }
+  batch_declaration: |
+    foreign {
+        func rand(): Int32
+        func malloc(size: UIntNative): CPointer<Unit>
+        func free(ptr: CPointer<Unit>): Unit
+    }
+  rules:
+    - "foreign functions are declarations only (no body)"
+    - "Parameter and return types must satisfy CType constraint"
+    - "No named parameters or default values"
+    - "Variadic args (...) at end; each arg must satisfy CType but can differ in type"
+    - "@C only applies to: foreign functions, top-level non-generic functions, and structs"
+    - "Must be called within unsafe {} blocks"
+
+# ─── 2. CFunc Type ───────────────────────────────────────────
+cfunc:
+  description: "Maps to C function pointers — callable from both C and Cangjie sides"
+  three_forms:
+    foreign: "@C foreign func — defined in C"
+    cangjie_func: "@C func — defined in Cangjie, callable from C"
+    cfunc_lambda: |
+      let f: CFunc<(Int32) -> Unit> = { x =>
+          println("value: ${x}")
+      }
+      // CFunc lambdas CANNOT capture variables
+  type_syntax: "CFunc<(ParamTypes) -> ReturnType>"
+  pointer_conversion: |
+    // CPointer<T> → CFunc
+    var ptr: CPointer<Int8> = getFuncPtr()
+    var f = CFunc<() -> Unit>(ptr)
+
+    // CFunc → CPointer<T>
+    foreign func rand(): Int32
+    var p = CPointer<Int8>(rand)
+
+# ─── 3. inout Parameters ─────────────────────────────────────
+inout:
+  purpose: "Automatically takes address of a variable and passes as CPointer<T>"
+  syntax: |
+    foreign func modify(ptr: CPointer<Int32>): Unit
+
+    main() {
+        var n: Int32 = 42           // must be 'var'
+        unsafe { modify(inout n) }  // &n as CPointer<Int32>
+    }
+  rules:
+    - "Only at CFunc call sites"
+    - "Target must satisfy CType constraint (not CString)"
+    - "Target must be a 'var' variable (mutable)"
+    - "Cannot come from class instance member variables"
+    - "Pointer valid only during the function call — C side must NOT store it"
+
+# ─── 4. unsafe Context ───────────────────────────────────────
+unsafe:
+  purpose: "Required for all C interop operations"
+  forms:
+    block: "unsafe { ... }"
+    function: "unsafe func doWork() { ... }"
+    expression: "let r = unsafe { rand() }"
+  required_for:
+    - "foreign function calls"
+    - "@C function calls"
+    - "CFunc variable calls"
+    - "unsafe-modified function calls"
+  lambda_note: "Lambdas do NOT propagate unsafe — must use unsafe {} inside lambda body"
+
+# ─── 5. Calling Convention ───────────────────────────────────
+calling_convention:
+  default: "@CallingConv[CDECL]  — can be omitted"
+  stdcall: "@CallingConv[STDCALL]  — for Win32 API"
+  applies_to: "foreign blocks, individual foreign functions, top-level CFunc functions"
+
+# ─── 6. Type Mapping ─────────────────────────────────────────
+type_mapping:
+  basic_types:
+    Unit: "void (only as CFunc return type or CPointer generic arg)"
+    Bool: "bool (1 byte)"
+    Int8_UInt8: "int8_t / uint8_t"
+    Int16_UInt16: "int16_t / uint16_t"
+    Int32_UInt32: "int32_t / uint32_t"
+    Int64_UInt64: "int64_t / uint64_t"
+    IntNative_UIntNative: "ssize_t / size_t (platform-dependent)"
+    Float32: "float"
+    Float64: "double"
+  note: "C's int/long sizes vary by platform — use explicit-width types"
+
+  c_struct:
+    syntax: |
+      @C
+      struct Point3D {
+          var x: Int64 = 0
+          var y: Int64 = 0
+          var z: Int64 = 0
+      }
+    rules:
+      - "Memory layout matches C struct"
+      - "Members must satisfy CType constraint"
+      - "Cannot implement or extend interfaces"
+      - "Cannot be used as enum associated value type"
+      - "Cannot be captured by closures"
+      - "No generic parameters"
+
+  CPointer:
+    description: "Maps to C's T* pointer type"
+    api:
+      - "CPointer<T>()              — null pointer"
+      - "isNull() / isNotNull()"
+      - "read() / read(idx)         — unsafe"
+      - "write(val) / write(idx, val) — unsafe"
+      - "+ (offset) / - (offset)    — unsafe"
+      - "toUIntNative()"
+      - "asResource() → CPointerResource<T>"
+    type_cast: "CPointer<UInt8>(someInt8Pointer)"
+
+  CString:
+    description: "Maps to C's char* — created via LibC.mallocCString(), freed via LibC.free()"
+    api:
+      - "size(): Int64"
+      - "isEmpty() / isNotEmpty()"
+      - "isNull(): Bool"
+      - "equals(rhs: CString): Bool"
+      - "toString(): String"
+      - "asResource(): CStringResource"
+    example: |
+      main() {
+          var s = unsafe { LibC.mallocCString("hello") }
+          println(s.toString())  // hello
+          unsafe { LibC.free(s) }
+      }
+
+  VArray_in_FFI:
+    description: "VArray<T, $N> maps to C's T[N]"
+    as_param: "Passed as CPointer<T> using inout"
+    not_as_return: "Cannot be used as return type"
+
+  sizeOf_alignOf: |
+    println(sizeOf<Int32>())   // 4
+    println(alignOf<Int64>())  // 8
+
+  CType_interface:
+    description: "Empty interface — parent type for all C interop types"
+    note: "Cannot be inherited or extended by user types"
+
+# ─── 7. Memory Management ────────────────────────────────────
+memory:
+  LibC:
+    description: "Utility class for C memory operations (all require unsafe)"
+    api:
+      - "malloc<T>(count!: Int64 = 1): CPointer<T>"
+      - "free<T>(p: CPointer<T>): Unit"
+      - "mallocCString(str: String): CString"
+      - "free(cstr: CString): Unit"
+    example: |
+      main() {
+          let arr = unsafe { LibC.malloc<Int32>(count: 5) }
+          unsafe {
+              for (i in 0..5) { arr.write(i, Int32(i * 10)) }
+              for (i in 0..5) { print("${arr.read(i)} ") }  // 0 10 20 30 40
+              println()
+              LibC.free(arr)
+          }
+      }
+
+  auto_management:
+    CPointerResource: |
+      let p = unsafe { LibC.malloc<Int32>() }
+      try (res = p.asResource()) {
+          unsafe { res.value.write(42) }
+      }  // auto-freed on exit
+    CStringResource: |
+      let cs = unsafe { LibC.mallocCString("hello") }
+      try (csr = cs.asResource()) {
+          println(csr.value.toString())
+      }  // auto-freed on exit
+
+  array_raw_data:
+    description: "Expose Array<T> underlying data as CPointer<T> without copying"
+    api:
+      - "acquireArrayRawData<T>(arr: Array<T>): CPointerHandle<T>  — unsafe"
+      - "releaseArrayRawData<T>(handle: CPointerHandle<T>): Unit   — unsafe"
+    rules:
+      - "Must be paired: acquire then release"
+      - "Between acquire/release: only simple C calls, no Cangjie object creation"
+
+# ─── 8. C Calling Cangjie ────────────────────────────────────
+c_calls_cangjie:
+  description: "C calls Cangjie via function pointers"
+  syntax: |
+    foreign func set_callback(cb: CFunc<(Int32) -> Unit>): Unit
+
+    // Method 1: @C function
+    @C
+    func myCallback(n: Int32): Unit { println("got ${n}") }
+
+    // Method 2: CFunc lambda (cannot capture variables)
+    let cb: CFunc<(Int32) -> Unit> = { n => println("lambda ${n}") }
+
+    main() {
+        unsafe { set_callback(myCallback) }
+        unsafe { set_callback(cb) }
+    }
+
+# ─── 9. Constraints ──────────────────────────────────────────
+constraints:
+  - "C thread_local variables are risky (Cangjie threads migrate between OS threads)"
+  - "Avoid thread affinity and priority operations"
+  - "Long-blocking C calls block the OS thread (hurts Cangjie scheduler throughput)"
+  - "fork() — child process cannot execute Cangjie logic"
+  - "C-side process exit may cause dangling resource access"
+  - "C function stack usage invisible to Cangjie — risk of stack overflow"

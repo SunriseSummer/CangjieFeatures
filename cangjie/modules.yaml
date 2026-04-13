@@ -1,0 +1,127 @@
+# Cangjie Language — Modules & Packages
+# Package declaration, imports, access control, module structure
+
+# ─── 1. Package Basics ───────────────────────────────────────
+packages:
+  concept:
+    package: "Smallest compilation unit — produces AST/static/dynamic library"
+    module: "Collection of packages — smallest distribution unit"
+  namespace: "Each package has its own namespace; top-level names must be unique (except function overloads)"
+
+# ─── 2. Package Declaration ──────────────────────────────────
+declaration:
+  syntax: "package pkg1.sub1  — must match relative path from src/"
+  rules:
+    - "Must be the first non-empty/non-comment line in the file"
+    - "All files in the same directory must have the same package declaration"
+    - "Directory names must match package names"
+    - "Files in src/ root without declaration default to 'default' package"
+    - "Subpackages cannot share names with top-level declarations"
+  directory_example: |
+    src/
+    ├── network/
+    │   ├── http/
+    │   │   ├── client.cj   // package default.network.http
+    │   │   └── server.cj   // package default.network.http
+    │   └── util.cj         // package default.network
+    └── main.cj             // default package (no declaration needed)
+
+# ─── 3. Entry Point ──────────────────────────────────────────
+main_function:
+  syntax: |
+    // No 'func' keyword
+    main() {
+        println("Hello!")
+    }
+
+    // With command-line args
+    main(args: Array<String>): Int64 {
+        for (arg in args) { println(arg) }
+        return 0
+    }
+  rules:
+    - "At most one main per root package"
+    - "No access modifiers allowed"
+    - "Not imported when package is used as library"
+    - "Parameters: none or Array<String>"
+    - "Return type: Unit or integer type"
+
+# ─── 4. Import ───────────────────────────────────────────────
+import:
+  syntax:
+    single: "import fullPkg.item"
+    multiple: "import fullPkg.{a, b, c}"
+    wildcard: "import fullPkg.*"
+    batch: "import {pkg1.*, pkg2.item}"
+  rules:
+    - "Must appear after package declaration, before other declarations"
+    - "No circular dependencies allowed"
+    - "Cannot import current package"
+    - "Cannot import non-visible declarations"
+    - "Imported names have lower priority than local declarations"
+
+  shadowing_and_overloading: |
+    // Local declarations shadow imports (unless they form valid overloads)
+    import pkga.*           // pkga has f(Int32) and f(Bool)
+    func f(a: Int32) {}     // shadows pkga.f(Int32)
+    // f(true)              // still calls pkga.f(Bool) — overload resolution
+
+  implicit_core: "String, Range, Array etc. available because 'core' package is auto-imported"
+
+  rename:
+    syntax: |
+      import p1.C as C1
+      import p2.C as C2
+      // Original name no longer usable after rename
+    namespace_qualifier: |
+      import p1
+      import p2
+      let a = p1.C()  // use package name as qualifier
+      let b = p2.C()
+
+  re_export:
+    syntax: "public import pkg.item  — re-exports 'item' to consumers of this package"
+    levels: [public, protected, internal, "private (default)"]
+    private_import: "Limits import visibility to the current file"
+    limitation: "Cannot re-export a package itself (only declarations)"
+    example: |
+      // package a — re-exports f from a.b
+      package a
+      public import a.b.f
+
+      // Consumers can now: import a.f
+
+# ─── 5. Access Modifiers (Top-Level) ─────────────────────────
+access_modifiers:
+  levels:
+    private:
+      visibility: "Current file only"
+    internal:
+      visibility: "Current package and subpackages"
+      note: "DEFAULT for most declarations"
+    protected:
+      visibility: "Current module (all packages in the module)"
+    public:
+      visibility: "Globally visible"
+
+  defaults:
+    package_declaration: public
+    import_declaration: private
+    other_declarations: internal
+
+  constraints:
+    - "Declaration's access level cannot exceed its constituent types' levels"
+    - "Exception: public declarations CAN use non-public types internally (in function body, init expressions)"
+    - "Built-in types (Int64, String etc.) are public"
+
+  example: |
+    package a
+
+    private func f1() { 1 }    // file-only
+    func f2() { 2 }            // internal (default)
+    protected func f3() { 3 }  // module-wide
+    public func f4() { 4 }     // global
+
+    // Error: public func cannot expose internal type as parameter
+    // class C {}              // internal by default
+    // public func bad(a: C): Int64 { 0 }  // compile error

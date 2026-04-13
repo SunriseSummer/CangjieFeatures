@@ -1,0 +1,368 @@
+# Cangjie Language — Basics
+# Keywords, identifiers, program structure, variables, basic types, operators
+
+# ─── 1. Keywords ──────────────────────────────────────────────
+keywords:
+  type:
+    - Bool
+    - Rune
+    - Float16
+    - Float32
+    - Float64
+    - Int8
+    - Int16
+    - Int32
+    - Int64
+    - IntNative
+    - UInt8
+    - UInt16
+    - UInt32
+    - UInt64
+    - UIntNative
+    - Array
+    - VArray
+    - String
+    - Nothing
+    - Unit
+  control_flow:
+    - break
+    - case
+    - catch
+    - continue
+    - do
+    - else
+    - finally
+    - for
+    - if
+    - match
+    - return
+    - spawn
+    - try
+    - throw
+    - while
+  declaration:
+    - as
+    - abstract
+    - class
+    - const
+    - enum
+    - extend
+    - func
+    - foreign
+    - import
+    - init
+    - interface
+    - let
+    - macro
+    - main
+    - mut
+    - open
+    - operator
+    - override
+    - package
+    - private
+    - prop
+    - protected
+    - public
+    - redef
+    - static
+    - struct
+    - super
+    - synchronized
+    - this
+    - This
+    - type
+    - unsafe
+    - where
+  boolean: [false, true]
+  other: [quote]
+  notes: >
+    Use backtick escaping (e.g. `while`) to use a keyword as an identifier.
+    Array, String, sealed are type/contextual keywords but can be used
+    as identifiers in some contexts.
+
+# ─── 2. Identifiers ──────────────────────────────────────────
+identifiers:
+  normal:
+    rule: >
+      Starts with XID_Start character (including CJK characters) or
+      underscore followed by at least one XID_Continue character.
+      Cannot be a keyword. Unicode 15.0.0, NFC normalization.
+    examples: [abc, _abc, 仓颉]
+  raw:
+    rule: "Wrap keyword or normal identifier in backticks: `while`, `if`"
+    purpose: Use keywords as identifiers
+
+# ─── 3. Program Structure ────────────────────────────────────
+program_structure:
+  top_level_allowed:
+    - global variables (let/var)
+    - global functions (func)
+    - type definitions (class, struct, enum, interface)
+    - main entry function
+    - extensions (extend)
+  notes:
+    - Enum and interface bodies allow only member functions (not member variables)
+    - Standalone block expressions { ... } are NOT allowed
+
+  entry_point:
+    syntax: |
+      # No 'func' keyword for main
+      main() {
+          println("Hello!")
+      }
+    params: "none | Array<String>"
+    return_type: "Unit | integer type (Int64, Int32, etc.)"
+    rules:
+      - At most one main per root package
+      - No access modifiers allowed
+      - Not imported when the package is used as a library
+
+# ─── 4. Variables ─────────────────────────────────────────────
+variables:
+  syntax: "modifier name[: Type] = value"
+  modifiers:
+    let:
+      meaning: immutable binding (assigned once)
+      note: "For reference types, the reference is immutable but the object's fields can still be mutated"
+    var:
+      meaning: mutable binding (can be reassigned)
+    const:
+      meaning: compile-time constant
+      note: Cannot omit initializer
+  type_annotation: "Optional when type can be inferred"
+  initialization:
+    global_static: Must be initialized at declaration
+    local: May be deferred but must be initialized before use
+  shadowing: Inner scope can shadow outer scope variables with the same name
+
+  value_vs_reference:
+    value_types:
+      includes: [primitives, struct, VArray, Tuple]
+      behavior: "Assignment copies data. 'let' prevents all modification."
+    reference_types:
+      includes: [class, Array, String, enum]
+      behavior: >
+        Assignment copies the reference (both variables point to the same
+        object). 'let' prevents reassignment but NOT mutation of the object.
+    special_case: >
+      Array is defined as a struct but stores data on the managed heap via
+      an internal reference — assignment shares the underlying storage.
+
+# ─── 5. Basic Types ──────────────────────────────────────────
+types:
+  integers:
+    signed: [Int8, Int16, Int32, Int64, IntNative]
+    unsigned: [UInt8, UInt16, UInt32, UInt64, UIntNative]
+    default: Int64  # literal without context infers to Int64
+    literals:
+      binary: "0b00011000"
+      octal: "0o30"
+      decimal: "24"
+      hex: "0x18"
+      separator: "_ (e.g. 1_000_000)"
+    suffixes:
+      i8: Int8
+      i16: Int16
+      i32: Int32
+      i64: Int64
+      u8: UInt8
+      u16: UInt16
+      u32: UInt32
+      u64: UInt64
+    byte_literal: "b'x' → UInt8 ASCII value, supports escapes"
+    conversion: |
+      # Use type constructor syntax (no .toInt64() methods)
+      let n = Int64(someInt32)
+      let f = Float64(someInt64)
+
+  floats:
+    types: [Float16, Float32, Float64]
+    default: Float64
+    literals:
+      decimal: "3.14, 2e3, 2.4e-1"
+      hex: "0x1.1p0, 0x1p2 (exponent base 2, mandatory)"
+    suffixes: { f16: Float16, f32: Float32, f64: Float64 }
+    note: "No plain 'f' suffix. No ++ or -- operators."
+
+  bool:
+    type: Bool
+    values: [true, false]
+    operators: ["!, &&, ||, ==, !=, &&=, ||="]
+
+  rune:
+    type: Rune  # single Unicode character
+    literals:
+      char: "r'a', r\"b\""
+      escape: "r'\\n', r'\\t'"
+      unicode: "r'\\u{4f60}' (1-8 hex digits)"
+    operators: "Comparison only (<, >, ==, etc.). NO arithmetic."
+    conversion: |
+      let u = UInt32(r'A')   # Rune → UInt32 (65)
+      let c = Rune(65)       # integer → Rune ('A')
+
+  string:
+    type: String  # UTF-8 encoded Unicode sequence
+    literals:
+      single_line: "'hello' or \"hello\""
+      multi_line: "\"\"\"...\"\"\" or '''...'''"
+      raw: "#\"...\"# (no escape processing, # count must match)"
+    interpolation: "\"value is ${expr}\" — not available in raw strings"
+    iteration: |
+      # IMPORTANT: for-in on String iterates UTF-8 BYTES (UInt8), not characters!
+      for (b in "你好") { }       # iterates 6 bytes
+      for (c in "你好".runes()) { } # iterates 2 Rune characters
+    operators: "+ (concatenation), comparison operators"
+
+  unit:
+    type: Unit
+    value: "()"
+    purpose: "Return type for side-effect-only expressions (print, assignment, loops)"
+
+  nothing:
+    type: Nothing
+    description: >
+      Bottom type — subtype of ALL types. Has no values.
+      Type of break, continue, return, throw expressions.
+
+  tuple:
+    syntax: "(T1, T2, ..., TN)  — minimum 2 elements"
+    immutable: true  # elements cannot be reassigned
+    access: "t[0], t[1] — compile-time integer literal index"
+    named: "(name: String, price: Int64) — all-or-nothing naming"
+    equality: "== / != available when all element types support them"
+    destructuring: |
+      let (a, b) = (1, 2)       # parallel assignment
+      (a, b) = (b, a)           # swap
+      (a, _) = (3, 4)           # ignore with _
+
+  array:
+    Array:
+      description: "Fixed-length, ordered, single-type collection (reference semantics)"
+      literal: "[1, 2, 3]"
+      constructors:
+        - "Array<Int64>()            — empty"
+        - "Array<Int64>(3, repeat: 0) — 3 zeros"
+        - "Array<Int64>(3, {i => i}) — lambda init"
+      access: "arr[i] — Int64 index, 0-based"
+      slice: "arr[0..5], arr[..3], arr[2..]"
+      modification: "arr[0] = 3 — elements are mutable"
+      size: ".size property"
+    VArray:
+      description: "Value-type fixed-length array: VArray<T, $N>"
+      constraint: "T cannot contain reference types, enums, lambdas (except CFunc)"
+      literal: "var a: VArray<Int64, $3> = [1, 2, 3]"
+      use_case: "Low GC pressure, C interop"
+
+  range:
+    syntax:
+      half_open: "start..end      — excludes end"
+      closed: "start..=end     — includes end"
+      with_step: "start..end : step — custom step (default 1, cannot be 0)"
+    example: |
+      for (i in 0..5) { }      # 0,1,2,3,4
+      for (i in 0..=5) { }     # 0,1,2,3,4,5
+      for (i in 0..10 : 2) { } # 0,2,4,6,8
+
+# ─── 6. Operators ─────────────────────────────────────────────
+operators:
+  assignment:
+    basic: "= (right-to-left evaluation, result type is Unit)"
+    no_chaining: "a = b = 0 is a syntax error"
+    multi: "(a, b) = (1, 2); (a, b) = (b, a) for swap"
+
+  arithmetic: ["+", "-", "*", "/", "% (integers only)", "** (power)"]
+  compound_assignment: ["**=", "*=", "/=", "%=", "+=", "-=", "<<=", ">>=", "&=", "^=", "|=", "&&=", "||="]
+  comparison: ["==", "!=", "<", "<=", ">", ">="]
+  logical: ["! (NOT)", "&& (AND, short-circuit)", "|| (OR, short-circuit)"]
+  bitwise: ["! (NOT, unary)", "<<", ">>", "&", "^", "|"]
+  increment_decrement:
+    syntax: "expr++ / expr-- (postfix only, integers only)"
+    result: "Unit (cannot be used as a value)"
+  coalescing:
+    syntax: "e1 ?? e2"
+    behavior: "If e1 is Some(v) → v; if None → e2 (short-circuit)"
+  range_ops: [".. (half-open)", "..= (closed)"]
+  pipe: "|> (pipeline: x |> f  equivalent to f(x))"
+  compose: "~> (composition: f ~> g  equivalent to {x => g(f(x))})"
+
+  precedence_table:
+    note: "Lower number = higher precedence"
+    levels:
+      - { precedence: 0,  operators: "@",                desc: "macro call" }
+      - { precedence: 1,  operators: ". [] ()",           desc: "member, index, call" }
+      - { precedence: 2,  operators: "++ -- ?",           desc: "postfix incr/decr, optional chain" }
+      - { precedence: 3,  operators: "! - (unary)",       desc: "bitwise NOT / logical NOT, negate" }
+      - { precedence: 4,  operators: "**",                desc: "power (right-assoc)" }
+      - { precedence: 5,  operators: "* / %",             desc: "multiply, divide, modulo" }
+      - { precedence: 6,  operators: "+ -",               desc: "add, subtract" }
+      - { precedence: 7,  operators: "<< >>",             desc: "bit shifts" }
+      - { precedence: 8,  operators: ".. ..=",            desc: "range" }
+      - { precedence: 9,  operators: "< <= > >= is as",   desc: "comparison, type check/cast" }
+      - { precedence: 10, operators: "== !=",             desc: "equality" }
+      - { precedence: 11, operators: "&",                 desc: "bitwise AND" }
+      - { precedence: 12, operators: "^",                 desc: "bitwise XOR" }
+      - { precedence: 13, operators: "|",                 desc: "bitwise OR" }
+      - { precedence: 14, operators: "&&",                desc: "logical AND" }
+      - { precedence: 15, operators: "||",                desc: "logical OR" }
+      - { precedence: 16, operators: "??",                desc: "coalescing (LOWER than == !=)" }
+      - { precedence: 17, operators: "|> ~>",             desc: "pipeline, composition" }
+      - { precedence: 18, operators: "= += -= etc.",      desc: "assignment" }
+    pitfall: >
+      ?? has precedence 16, LOWER than == (10) and < (9).
+      'opt ?? default != value' parses as 'opt ?? (default != value)'.
+      Always use parentheses: '(opt ?? default) != value'.
+
+# ─── 7. Control Flow ─────────────────────────────────────────
+control_flow:
+  if:
+    syntax: "if (cond) { ... } else if (cond) { ... } else { ... }"
+    is_expression: true
+    notes:
+      - "cond must be Bool"
+      - "With else: type is common supertype of branches"
+      - "Without else: type is always Unit"
+      - "Supports let-pattern in condition (see pattern_matching.yaml)"
+
+  while:
+    syntax: "while (cond) { ... }"
+    do_while: "do { ... } while (cond)"
+    type: Unit (always)
+
+  for_in:
+    syntax: "for (item in sequence) { ... }"
+    requirement: "sequence must implement Iterable<T>"
+    features:
+      - "Iteration variable is immutable"
+      - "Tuple destructuring: for ((k, v) in pairs) { }"
+      - "where clause: for (i in 0..10 where i % 2 == 0) { }"
+      - "Wildcard: for (_ in 0..5) { } — ignore value"
+
+  break_continue:
+    break: "Exit enclosing loop (type is Nothing)"
+    continue: "Skip to next iteration (type is Nothing)"
+
+  match:
+    note: "See pattern_matching.yaml for full details"
+    basic_syntax: |
+      match (expr) {
+          case pattern1 => expr1
+          case pattern2 =>
+              expr2a
+              expr2b   // last expression is the branch value
+          case _ => default_expr
+      }
+
+# ─── 8. Numeric Type Conversion ──────────────────────────────
+type_conversion:
+  syntax: "TargetType(sourceExpr)  — constructor-style, no .toXxx() methods"
+  examples: |
+    let a: Int32 = 42
+    let n = Int64(a)          # Int32 → Int64
+    let f = Float64(n)        # Int64 → Float64
+    let r = Rune(65)          # Int64 → Rune ('A')
+    let u = UInt32(r'A')      # Rune → UInt32 (65)
+  string_parsing: |
+    import std.convert.*
+    let n = Int64.parse("42")       # String → Int64 (throws on failure)
+    let f = Float64.parse("3.14")   # String → Float64

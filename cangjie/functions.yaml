@@ -1,0 +1,197 @@
+# Cangjie Language — Functions
+# Functions, lambdas, closures, operator overloading, syntactic sugar
+
+# ─── 1. Function Definition ──────────────────────────────────
+definition:
+  syntax: |
+    func name(params): ReturnType {
+        // body — last expression is implicit return value
+    }
+  params:
+    positional: "p: Type"
+    named: "p!: Type           — caller uses 'p: value' (no ! at call site)"
+    named_default: "p!: Type = expr  — only named params can have defaults"
+    ordering: "positional params first, then named params"
+    immutability: "All params are immutable inside the function body"
+  return_type:
+    explicit: "Declared after colon"
+    inferred: "Can be omitted if compiler can infer"
+    unit_auto: "If return type is Unit, compiler inserts 'return ()' automatically"
+  return_statement:
+    syntax: "'return expr' or 'return' (equivalent to 'return ()')"
+    type: "return expression has type Nothing"
+  example: |
+    func formatNumber(value: Int64, indent!: Int64 = 2): String {
+        " " * indent + value.toString()
+    }
+
+    main() {
+        println(formatNumber(42, indent: 4))  // "    42"
+        println(formatNumber(42))             // "  42"
+    }
+
+# ─── 2. Function Types (First-Class) ─────────────────────────
+function_types:
+  syntax: "(ParamType1, ParamType2) -> ReturnType"
+  associativity: "-> is right-associative"
+  examples:
+    - "() -> Unit                        — no params, returns Unit"
+    - "(Int64, Int64) -> Int64           — two params"
+    - "() -> (Int64) -> Int64            — returns a function"
+  as_values: |
+    # Functions can be assigned to variables, passed as arguments, returned
+    func add(a: Int64, b: Int64): Int64 { a + b }
+    var plus: (Int64, Int64) -> Int64 = add
+    println(plus(1, 2))  // 3
+
+# ─── 3. Lambda Expressions ───────────────────────────────────
+lambda:
+  syntax: |
+    { param1: Type1, param2: Type2 =>
+        body_expressions
+    }
+  rules:
+    - "=> separates params from body (required except in trailing lambda position)"
+    - "No-param lambda: { => expr }"
+    - "Parameter types can be omitted when inferable from context"
+    - "Return type is always inferred (cannot be declared)"
+    - "Body value = last expression's value"
+  immediate_call: "{ a: Int64, b: Int64 => a + b }(1, 2)  // 3"
+  example: |
+    let double = { x: Int64 => x * 2 }
+    println(double(5))  // 10
+
+    let nums = [3, 1, 2]
+    let sorted = nums.sortBy { a: Int64, b: Int64 => a < b }
+
+# ─── 4. Closures ─────────────────────────────────────────────
+closures:
+  definition: "Function/lambda + captured variables from enclosing lexical scope"
+  capture_rules:
+    - "Captured variables must be visible and initialized at the closure definition point"
+    - "Reference type captures: mutable instance members can be modified"
+    - "Closures capturing 'var' locals CANNOT escape (cannot be assigned, returned, or passed as argument — only immediately called)"
+    - "Transitive: if f calls g which captures a var, f also cannot escape"
+    - "Global/static 'var' variables do NOT count as captures"
+  not_captures:
+    - "Own local variables and parameters"
+    - "Global variables and static members"
+    - "Instance members accessed via implicit 'this' in member functions"
+
+# ─── 5. Nested Functions ─────────────────────────────────────
+nested_functions:
+  description: "Functions defined inside other function bodies"
+  scope: "Visible only within the enclosing function"
+  can_access: "Enclosing function's variables and parameters"
+  lifetime: "Created on each call, destroyed when enclosing function exits (unless returned as closure)"
+
+# ─── 6. Function Overloading ─────────────────────────────────
+overloading:
+  rules:
+    - "Same name, different parameter count or types → valid overload"
+    - "Constructors: different params → overload; primary constructor and init can overload"
+    - "Parent/child class same-name functions with different param types → overload"
+  prohibited:
+    - "Static and instance methods with the same name in the same type (even with different params)"
+    - "Enum constructors vs. member functions with same name"
+    - "Variables and functions cannot share the same name"
+  resolution:
+    - "Inner scope takes priority"
+    - "Most specific (narrowest) parameter types win"
+    - "Parent/child treated as same scope — specificity decides"
+    - "Ambiguous → compile error"
+
+# ─── 7. Operator Overloading ─────────────────────────────────
+operator_overloading:
+  syntax: |
+    struct Point {
+        Point(let x: Float64, let y: Float64) {}
+
+        public operator func +(rhs: Point): Point {
+            Point(x + rhs.x, y + rhs.y)
+        }
+
+        public operator func -(): Point {  // unary (no params)
+            Point(-x, -y)
+        }
+    }
+
+    main() {
+        let a = Point(1.0, 2.0)
+        let b = Point(3.0, 4.0)
+        let c = a + b
+        println("${c.x}, ${c.y}")  // 4.0, 6.0
+    }
+  rules:
+    - "Use 'operator func' keyword"
+    - "Unary: no parameters (operates on this)"
+    - "Binary: one parameter (right operand; left is this)"
+    - "Allowed in: class, interface, struct, enum, extend"
+    - "Cannot be static or generic"
+    - "Does not change original precedence or associativity"
+
+  overloadable_operators:
+    - "()"     # function call
+    - "[]"     # index
+    - "!"      # logical/bitwise NOT (unary)
+    - "- (unary)"
+    - "**"
+    - "*, /, %"
+    - "+, - (binary)"
+    - "<<, >>"
+    - "<, <=, >, >="
+    - "==, !="
+    - "&, ^, |"
+
+  index_operator:
+    get: "operator func [](idx: Int64): T"
+    set: "operator func [](idx: Int64, value!: T): Unit  — must have named param 'value!'"
+
+  call_operator:
+    syntax: "operator func ()(params): ReturnType"
+    note: "this() and super() always refer to constructors, not the overloaded ()"
+
+  compound_assignment:
+    auto: >
+      Overloading a binary operator (except comparison operators) automatically
+      enables the corresponding compound assignment (+=, -= etc.) when the
+      return type matches the left operand type.
+
+# ─── 8. Syntactic Sugar ──────────────────────────────────────
+syntactic_sugar:
+  trailing_lambda:
+    description: "When the last parameter is a function type and the argument is a lambda"
+    rules:
+      - "Lambda can be placed outside the parentheses"
+      - "If the function has only one parameter (the lambda), parentheses can be omitted entirely"
+      - "=> can be omitted in trailing lambda position"
+    example: |
+      func apply(f: (Int64) -> Int64): Int64 { f(5) }
+      let r = apply { i => i * i }
+      println(r)  // 25
+
+  pipe_operator:
+    syntax: "e1 |> e2  — equivalent to: let v = e1; e2(v)"
+    chaining: "arr |> transform |> sum"
+    limitation: "Cannot directly use with functions having non-default named params (wrap in lambda)"
+
+  compose_operator:
+    syntax: "f ~> g  — equivalent to: { x => g(f(x)) }"
+    requirement: "Both f and g must be single-parameter functions"
+
+  variadic_arguments:
+    rule: >
+      When the LAST positional parameter is Array<T>, callers can pass
+      0 or more values directly (desugars to array literal).
+    example: |
+      func sum(arr: Array<Int64>): Int64 {
+          var total = 0
+          for (v in arr) { total += v }
+          total
+      }
+
+      main() {
+          println(sum(1, 2, 3))  // desugars to sum([1, 2, 3]) → 6
+      }
+    scope: "Global, static, instance, local functions, constructors, lambdas, () and [] overloads"
+    not_applicable: "Other operator overloads, ~>, |>"
