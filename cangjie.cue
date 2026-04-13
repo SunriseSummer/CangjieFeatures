@@ -342,12 +342,6 @@ package cangjie
 		filtered:    "for (x in list where x > 0) { body }"
 		wildcard:    "for (_ in 0..5) { body }"
 	}
-	desugar: """
-		for (item in coll) { ... }
-		等价于:
-		var it = coll.iterator()
-		while (let Some(item) <- it.next()) { ... }
-		"""
 }
 
 #MatchExpression: {
