@@ -42,7 +42,47 @@ package cangjie
 }
 
 // ============================================================
-// 2. 基础数据类型
+// 2. 表达式语义
+// ============================================================
+
+#ExpressionSemantics: {
+	kind: "rule"
+	core: "仓颉一切皆表达式，每个可求值的代码片段都有类型和值"
+	codeBlock: {
+		rule:   "{ exprs } 不是独立表达式，必须附着于 if/while/for/match/func/lambda"
+		value:  "块的值为最后一个表达式（空块或末尾为声明时为 Unit）"
+		wrong:  "let r = { let x = 2; x ** 3 }  // 错误：独立代码块"
+		right:  "let r = if (true) { let x = 2; x ** 3 } else { 0 }  // 正确"
+	}
+	controlExprTypes: {
+		if_:       "if-else 为表达式，分支返回类型须兼容"
+		match_:    "match 为表达式，各 case 返回类型须兼容"
+		whileFor:  "while/for-in 类型为 Unit"
+		breakCont: "break/continue/return/throw 类型为 Nothing"
+	}
+	separator: "多个表达式：换行分隔或分号 ;"
+}
+
+// ============================================================
+// 3. 值类型与引用类型
+// ============================================================
+
+#ValueReferenceTypes: {
+	kind: "rule"
+	valueTypes: {
+		types:    ["struct", "VArray", "Bool", "Int*", "UInt*", "Float*", "Rune", "Nothing", "Unit"]
+		behavior: "栈存储，赋值/传参时拷贝"
+		letRule:  "let 完全不可修改（字段也不可变）"
+	}
+	referenceTypes: {
+		types:    ["class", "String", "Array<T>", "Function", "enum"]
+		behavior: "堆存储，赋值/传参时共享引用，GC 管理"
+		letRule:  "let 阻止重新赋值，但不阻止修改内部可变成员"
+	}
+}
+
+// ============================================================
+// 4. 基础数据类型
 // ============================================================
 
 #IntegerType: {
@@ -98,20 +138,34 @@ package cangjie
 	kind: "type"
 	name: "String"
 	literals: {
-		regular:  "\"hello\""
-		multiline: "\"\"\"多行\\n字符串\"\"\""
-		raw:       "#\"不转义 \\n\"#"
+		regular:      "\"hello\""
+		multiline:    "\"\"\"多行字符串，内部引号不需转义\"\"\""
+		rawSingle:    "#\"不转义 \\n\"#"
+		rawMultiline: "##\"\"\"多行原始字符串\"\"\"##"
+		rule:         "多行字符串内容从首行换行后开始，末尾 \"\"\" 前的换行不包含在内"
 	}
 	interpolation: {
 		syntax:  "${expression}"
 		example: "\"Hello, ${name}!\""
+		nested:  "可嵌入声明和复杂表达式"
 	}
 	keyMethods: [".size", ".isEmpty()", ".substring(start, end)",
 		".contains(str)", ".startsWith(str)", ".endsWith(str)",
-		".split(delim)", ".replace(old, new)", ".trim()",
-		".toUpper()", ".toLower()",
-		".runes()", ".toRuneArray()", ".toUtf8()"]
-	iteration: "for (byte in str) 按 UInt8 迭代；用 str.runes() 按 Rune 迭代"
+		".split(delim)", ".lazySplit(delim)", ".lines()",
+		".replace(old, new)", ".trim()", ".trimAscii()",
+		".toAsciiUpper()", ".toAsciiLower()", ".toAsciiTitle()",
+		".padStart(len, char)", ".padEnd(len, char)",
+		".removePrefix(str)", ".removeSuffix(str)",
+		".indexOf(str)", ".lastIndexOf(str)", ".count(str)",
+		".runes()", ".toRuneArray()", ".toArray()", ".toUtf8()"]
+	iteration: {
+		bytes: "for (b in str)  // 按 Byte (UInt8) 迭代 UTF-8 字节"
+		runes: "for (r in str.runes())  // 按 Rune 迭代 Unicode 字符"
+	}
+	fromUtf8: {
+		safe:   "String.fromUtf8(bytes)  // 验证 UTF-8"
+		unsafe: "String.fromUtf8Unchecked(bytes)  // 不验证"
+	}
 }
 
 #UnitType: {
@@ -225,6 +279,8 @@ package cangjie
 		"类型标注可省略（若可推断）",
 		"全局/静态变量必须初始化",
 		"局部变量可延迟初始化，但使用前必须赋值",
+		"函数参数隐式 let，不可赋值",
+		"内层作用域可遮蔽外层同名变量",
 	]
 	multiAssignment: {
 		syntax:  "(a, b) = (expr1, expr2)"
@@ -342,6 +398,19 @@ package cangjie
 		filtered:    "for (x in list where x > 0) { body }"
 		wildcard:    "for (_ in 0..5) { body }"
 	}
+	desugar: {
+		equivalent: """
+			var _it = collection.iterator()
+			while (let Some(item) <- _it.next()) { body }
+			"""
+		rule: "collection 仅求值一次；item 为 let（不可变）"
+	}
+	iteratorProtocol: {
+		iterable:  "interface Iterable<T> { func iterator(): Iterator<T> }"
+		iterator:  "interface Iterator<T> <: Iterable<T> { mut func next(): Option<T> }"
+		contract:  "next() 返回 Some(value) 或 None（耗尽）"
+		custom:    "实现 Iterable<T> 接口即可用于 for-in"
+	}
 }
 
 #MatchExpression: {
@@ -392,6 +461,12 @@ package cangjie
 		nothingSubtype:    "Nothing <: T（任意 T）"
 		anySuper:          "T <: Any（任意 T）"
 	}
+	variance: {
+		userGeneric: "不变 — Box<Sub> 不是 Box<Super> 的子类型"
+		tuple:       "协变 — 每个元素位置协变"
+		function_:   "参数逆变，返回值协变"
+		array:       "不变 — Array<Sub> 不是 Array<Super> 的子类型"
+	}
 	typeOperators: {
 		is_: "expr is Type  // 运行时类型检查，返回 Bool"
 		as_: "expr as Type  // 安全向下转型，返回 Option<Type>"
@@ -399,6 +474,11 @@ package cangjie
 	typeAlias: {
 		syntax:  "type Alias = OriginalType"
 		example: "type StringArray = Array<String>"
+	}
+	sealed: {
+		sealedClass: "sealed abstract class — 仅同包可继承，隐式 public/open"
+		sealedInterface: "sealed interface — 仅同包可实现"
+		subclassRules: "sealed 子类可为 open/sealed，若 open 则包外也可继承该子类"
 	}
 }
 
@@ -433,35 +513,72 @@ package cangjie
 	}
 	members: {
 		instanceField:  "let/var name: Type"
-		staticField:    "static let/var name: Type"
+		staticField:    "static let/var name: Type  // 须初始化或由 static init 赋值"
+		staticInit:     "static init() { ... }  // 最多一个，初始化未赋值的静态字段"
 		instanceMethod: "func name(params): RetType { body }"
 		staticMethod:   "static func name(params): RetType { body }"
-		abstractMethod: "abstract func name(): RetType  // 无函数体，隐式 open"
+		abstractMethod: "abstract func name(): RetType  // 无函数体，隐式 open，仅 public/protected"
 		property: {
-			readOnly: "prop name: Type { get() { ... } }"
-			mutable:  "mut prop name: Type { get() { ... } set(v) { ... } }"
+			readOnly:     "prop name: Type { get() { ... } }"
+			mutable:      "mut prop name: Type { get() { ... } set(v) { ... } }"
+			static_:      "static prop / static mut prop"
+			abstract_:    "abstract prop（无实现，子类须提供）"
+			mutRestrict:  "数值/Bool/Unit/Nothing/String/Range/Rune/enum/Function/元组 不能用 mut prop"
 		}
 	}
 	inheritance: {
 		syntax:       "class Sub <: Super { ... }  // Super 须为 open 或 abstract class"
-		superCall:    "super(args)  // 在 init 中调用父类构造"
-		override_:    "override func method(): RetType { ... }"
+		superCall:    "super(args)  // 在 init 中第一条表达式调用父类构造"
+		thisCall:     "this(args)   // 委托给同类其他构造器"
+		callRule:     "super() 和 this() 互斥，须为 init 中首条表达式"
+		override_: {
+			syntax:   "override func method(): RetType { ... }"
+			rule:     "父类方法须标记 open；动态分派（按运行时类型）"
+			namedArg: "命名参数须与父类一致"
+		}
+		redef: {
+			syntax: "redef static func method(): RetType { ... }"
+			rule:   "用于静态方法；静态分派（按类型名）"
+		}
 		openRequired: "父类方法须标记 open 才能被 override"
 	}
+	initOrder: [
+		"1. 成员默认值初始化",
+		"2. super()/this() 调用",
+		"3. 构造器体执行",
+	]
 	accessModifiers: {
 		private_:   "private    — 仅当前类型内可见"
 		internal_:  "internal   — 当前包及子包可见（默认）"
 		protected_: "protected  — 当前模块 + 子类可见"
 		public_:    "public     — 全局可见"
 	}
-	thisType: "This 类型：指代当前类型，用于方法链的正确子类返回"
-	finalizer: "~init() { ... }  // GC 调用，时机不确定"
+	thisType: {
+		syntax:    "This 类型：指代当前类型"
+		usage:     "仅用于实例方法返回类型"
+		behavior:  "子类 override 时返回子类类型"
+		inference: "返回类型可省略（若仅返回 This 表达式）"
+	}
+	finalizer: {
+		syntax: "~init() { ... }  // GC 调用，时机不确定"
+		constraints: [
+			"无参数、无返回值、无泛型、无修饰符",
+			"不可显式调用",
+			"含 ~init 的类不可标记 open",
+			"每类最多一个，不可在 extend 中定义",
+			"未捕获异常导致未定义行为",
+			"构造失败（异常）不执行 ~init",
+		]
+	}
 	rules: [
 		"主构造函数写在类体内部：ClassName(let x: T) {} 而非类名后面",
 		"class 默认继承 Object",
 		"class 是引用类型",
 		"class 默认不可继承，需标记 open 才能被子类继承",
 		"abstract class 隐式 open",
+		"sealed abstract class — 仅同包可继承，隐式 public/open",
+		"静态方法和实例方法不能同名（即使参数不同）",
+		"无自定义 init 且所有字段已初始化时，自动生成 public init()",
 	]
 }
 
@@ -492,6 +609,11 @@ package cangjie
 	mutMethod: {
 		syntax: "public mut func methodName() { field = newValue }"
 		rule:   "修改 struct 自身字段的方法须标记 mut，且调用方变量须为 var"
+	}
+	staticMembers: {
+		field:  "static let/var name: Type"
+		init_:  "static init() { ... }"
+		method: "static func name(): RetType { ... }"
 	}
 	rules: [
 		"struct 是值类型，赋值即拷贝",
@@ -527,6 +649,7 @@ package cangjie
 		struct_:   "struct Point <: Printable { public func toString(): String { ... } }"
 		multiple:  "class C <: InterfaceA & InterfaceB { ... }"
 	}
+	sealed: "sealed interface — 仅同包可实现"
 	rules: [
 		"接口可以有默认方法实现",
 		"接口可以有静态方法（含默认实现）",
@@ -975,11 +1098,15 @@ package cangjie
 			    set(v) { backingField = v }
 			}
 			"""
+		static_:   "static prop / static mut prop"
+		abstract_: "abstract prop（无实现，子类/实现者必须提供）"
 	}
 	rules: [
 		"prop 只读属性只有 get",
 		"mut prop 可读写属性有 get 和 set",
 		"属性不是字段，是计算属性",
+		"数值/Bool/Unit/Nothing/String/Rune/Range/enum/Function/元组类型不能用 mut prop",
+		"override 属性：mut 继承须在子类中也是 mut",
 	]
 }
 
