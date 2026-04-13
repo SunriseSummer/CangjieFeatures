@@ -259,7 +259,7 @@
     instantiate_as: Future<T>
     notes:
       - "get() blocks until done (rethrows exception from spawned thread)."
-      - "get(timeout) blocks until done or timeout. Throws TimeoutException on timeout; timeout <= Duration.Zero behaves like get()."
+      - "get(timeout) blocks until done or timeout. Throws TimeoutException on timeout; timeout <= Duration.Zero behaves like get() and waits indefinitely."
       - "tryGet() returns Option<T> without blocking."
       - "cancel() is cooperative; thread must check hasPendingCancellation."
 
@@ -284,7 +284,7 @@
     import: std.sync.*
     notes:
       - "wait() releases the associated lock while blocked and re-acquires it before returning."
-      - "wait(timeout): returns Bool (true = signaled, false = timeout). timeout <= Duration.Zero throws IllegalArgumentException."
+      - "wait(timeout): returns Bool (true = signaled, false = timeout). Unlike Future.get(timeout), timeout <= Duration.Zero is invalid here and throws IllegalArgumentException."
       - "waitUntil(predicate): Unit. waitUntil(predicate, timeout): Bool. Use these or a while-loop around wait() because spurious wakeups are allowed."
       - "notify() and notifyAll() to signal."
 
