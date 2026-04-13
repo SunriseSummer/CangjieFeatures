@@ -427,6 +427,7 @@ package cangjie
 			    func method(): RetType { ... }
 			}
 			"""
+		open_: "open class Base { ... }  // 允许被继承"
 		primaryConstructor: """
 			class ClassName {
 			    ClassName(let field1: Type1, var field2: Type2) {}
@@ -447,7 +448,7 @@ package cangjie
 		}
 	}
 	inheritance: {
-		syntax:       "class Sub <: Super { ... }"
+		syntax:       "class Sub <: Super { ... }  // Super 须为 open 或 abstract class"
 		superCall:    "super(args)  // 在 init 中调用父类构造"
 		override_:    "override func method(): RetType { ... }"
 		openRequired: "父类方法须标记 open 才能被 override"
@@ -464,6 +465,8 @@ package cangjie
 		"主构造函数写在类体内部：ClassName(let x: T) {} 而非类名后面",
 		"class 默认继承 Object",
 		"class 是引用类型",
+		"class 默认不可继承，需标记 open 才能被子类继承",
+		"abstract class 隐式 open",
 	]
 }
 
@@ -631,7 +634,7 @@ package cangjie
 		arrayList: {
 			type:    "ArrayList<T>"
 			create:  "ArrayList<Int64>()"
-			methods: [".append(item)", ".size", ".get(index)", ".remove(index)"]
+			methods: [".add(item)", ".size", ".get(index)", ".remove(index)"]
 		}
 		hashMap: {
 			type:    "HashMap<K, V>"
@@ -739,7 +742,7 @@ package cangjie
 		binary:    "public operator func +(right: Type): RetType { ... }"
 		unary:     "public operator func -(): Type { ... }  // 无参数"
 		subscriptGet: "public operator func [](index: Int64): T { ... }"
-		subscriptSet: "public operator func [](index: Int64, value!: T): Unit { ... }"
+		subscriptSet: "public mut operator func [](index: Int64, value!: T): Unit { ... }"
 		callOperator: "public operator func ()(args): RetType { ... }"
 	}
 	overloadable: ["+", "-", "*", "/", "%", "**",
@@ -748,6 +751,7 @@ package cangjie
 		"[]", "()"]
 	rules: [
 		"下标 set 使用命名参数 value!: T 而非 []= 语法",
+		"struct 中的下标 set 须标记 mut：mut operator func [](index, value!: T)",
 		"一元操作符不带参数",
 		"二元操作符带一个参数（右操作数）",
 	]
@@ -992,8 +996,8 @@ package cangjie
 		    | Rectangle(Float64, Float64)
 		}
 		
-		// 类
-		class Animal <: Describable {
+		// 类（需 open 才能被继承）
+		open class Animal <: Describable {
 		    let name: String
 		    var age: Int64
 		

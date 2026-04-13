@@ -1,361 +1,142 @@
-以下是用 CUE 语言对 Swift 部分语法的完整描述设计，展示了 CUE 在类型约束、结构复用、默认值及严谨嵌套方面的优势。
+# CUE 语法描述设计文档
 
-cue
-// ------------------------------------------------------------
-// 基础定义：词法 & 复用结构
-// ------------------------------------------------------------
-package swift
+## 概述
 
-// Token 基础类型
-#Token: {
-	kind: "token"
-	token?: string   // 固定文本，如 "func"
-	pattern?: string // 正则模式，如标识符
-}
+本项目使用 CUE 语言对**仓颉编程语言**核心语法进行结构化描述，生成 `cangjie.cue` 文件，用于指导 AI 快速学习掌握仓颉语言。
 
-#Identifier: #Token & {
-	kind:   "token"
-	pattern: "^`?[a-zA-Z_][a-zA-Z0-9_]*`?$"
-	description: """
-		普通标识符或反引号包裹的关键字。
-		若使用反引号，内部必须为 Swift 关键字。
-		"""
-	examples: ["myVar", "`class`"]
-}
+CUE（Configure, Unify, Execute）在类型约束、结构复用、默认值及严谨嵌套方面具有显著优势，非常适合用作编程语言语法的形式化描述载体。
 
-// 类型标注 ": Type"
-#TypeAnnotation: {
-	colon: ":"
-	type:  #Type
-}
+## 设计原则
 
-// ------------------------------------------------------------
-// 类型系统（递归定义，使用闭包 #Type）
-// ------------------------------------------------------------
-#Type: {
-	// 通过 oneOf 表示多种可能
-	oneOf: [
-		#SimpleTypeIdentifier,
-		#OptionalType,
-		#FunctionType,
-		#TupleType,
-		// ... 其他类型
-	]
-}
+### 1. 类型约束即文档
 
-#SimpleTypeIdentifier: {
-	kind: "type"
-	name: #Identifier
-	genericArguments?: {
-		"<": "<"
-		types: [...#Type] & {separator: ","}
-		">": ">"
-	}
-}
+每个语法特性通过 CUE 定义（`#Definition`）进行结构化描述，明确定义了各字段的类型、取值范围和约束条件。
 
-#OptionalType: {
-	kind: "type"
-	base: #Type
-	"?":  "?"
-}
-
-#FunctionType: {
-	kind: "type"
-	"(":      "("
-	params:   #TupleTypeElementList
-	")":      ")"
-	"->":     "->"
-	returnType: #Type
-	throws?:   "throws" | "rethrows"
-	async?:    "async"
-}
-
-#TupleTypeElementList: {
-	// 简化：元素列表
-	elements: [...{
-		name?:    #Identifier
-		type:     #Type
-	}] & {separator: ","}
-}
-
-// ------------------------------------------------------------
-// 模式匹配
-// ------------------------------------------------------------
-#Pattern: {
-	oneOf: [
-		#IdentifierPattern,
-		#WildcardPattern,
-		#ValueBindingPattern,
-		// ...
-	]
-}
-
-#IdentifierPattern: {
-	kind: "pattern"
-	name: #Identifier
-}
-
-#WildcardPattern: {
-	kind:  "pattern"
-	token: "_"
-}
-
-#ValueBindingPattern: {
-	kind: "pattern"
-	binding: "let" | "var"
-	pattern: #Pattern
-}
-
-// ------------------------------------------------------------
-// 表达式（抽象占位）
-// ------------------------------------------------------------
-#Expression: {
-	kind: "expr"
-	// 具体子类在此省略
-}
-
-// ------------------------------------------------------------
-// 语句与代码块
-// ------------------------------------------------------------
-#CodeBlock: {
-	kind: "block"
-	"{":   "{"
-	stmts: [...#Statement]
-	"}":   "}"
-}
-
-#Statement: {
-	oneOf: [
-		#ExpressionStatement,
-		#Declaration,       // 局部声明
-		#IfStatement,
-		#GuardStatement,
-		// ...
-	]
-}
-
-#ExpressionStatement: {
-	kind: "stmt"
-	expr: #Expression
-}
-
-// ------------------------------------------------------------
-// 条件列表（用于 if / guard / while）
-// ------------------------------------------------------------
-#ConditionList: {
-	conditions: [...{
-		oneOf: [
-			#Expression,
-			#AvailabilityCondition,
-			#CaseCondition,
-			#OptionalBindingCondition,
-		]
-	}] & {separator: ","}
-}
-
-#OptionalBindingCondition: {
-	kind: "condition"
-	binding: "let" | "var"
-	pattern: #Pattern
-	"=":     "="
-	init:    #Expression
-	constraint: "init 类型必须为 Optional<T>"
-}
-
-#AvailabilityCondition: {
-	// 例如 @available 条件
-	kind: "condition"
-	// 具体结构略
-}
-
-#CaseCondition: {
-	// case 模式匹配条件
-	kind: "condition"
-	// 具体结构略
-}
-
-// ------------------------------------------------------------
-// 分支语句：if / guard
-// ------------------------------------------------------------
-#IfStatement: {
-	kind: "stmt"
-	"if": "if"
-	cond: #ConditionList
-	body: #CodeBlock
-	else?: #ElseClause
-}
-
-#ElseClause: {
-	"else": "else"
-	body:   #CodeBlock | #IfStatement   // 支持 else if
-}
-
-#GuardStatement: {
-	kind: "stmt"
-	"guard": "guard"
-	cond:   #ConditionList
-	"else": "else"
-	body:   #CodeBlock
-	constraint: "else 子句必须退出当前作用域 (return/throw/break/continue)"
-}
-
-// ------------------------------------------------------------
-// 函数声明（完整版）
-// ------------------------------------------------------------
-#FunctionDeclaration: {
-	kind: "decl"
-	attrs?: [...#Attribute]
-	mods?:  [...#Modifier]
-	"func": "func"
-	name:   #Identifier
-	generics?: #GenericParameterClause
-	sig: #FunctionSignature
-	where?: #GenericWhereClause
-	body?:  #CodeBlock
-
-	// 作用域描述（CUE 可结构化表示）
-	scope: {
-		introduces: [name, ...sig.params[*].internalName]
-	}
-	constraints: [
-		"mutating 仅允许在 struct/enum 实例方法中",
-		"throws 与 rethrows 互斥",
-	]
-}
-
-#FunctionSignature: {
-	params: #ParameterClause
-	effects?: {
-		async?:  "async"
-		throws?: "throws" | "rethrows"
-	}
-	result?: {
-		"->": "->"
-		type:  #Type
-	}
-}
-
-#ParameterClause: {
-	"(":     "("
-	params:  [...#Parameter] & {separator: ","}
-	")":     ")"
-}
-
-#Parameter: {
-	external?: #Identifier   // 外部参数名
-	local:     #Identifier   // 内部参数名
-	":":       ":"
-	type:      #Type
-	default?: {
-		"=":  "="
-		expr: #Expression
-	}
-}
-
-#GenericParameterClause: {
-	"<":      "<"
-	params:   [...#GenericParameter] & {separator: ","}
-	">":      ">"
-}
-
-#GenericParameter: {
-	name:      #Identifier
-	conforms?: #Type   // 类型约束
-}
-
-#GenericWhereClause: {
-	"where": "where"
-	reqs: [...#Requirement] & {separator: ","}
-}
-
-#Requirement: {
-	// 例如 T: Equatable, U == Collection
-	// 简化表示
-	left:  #Identifier | #Type
-	op:    ":" | "=="
-	right: #Type
-}
-
-// ------------------------------------------------------------
-// 顶层编译单元
-// ------------------------------------------------------------
-#CompilationUnit: {
-	kind: "file"
-	stmts: [...{
-		oneOf: [
-			#ImportDecl,
-			#TopLevelDecl,
-			#Statement,
-		]
-	}]
-}
-
-#ImportDecl: {
-	kind: "decl"
-	"import": "import"
-	module:   #Identifier
-}
-
-#TopLevelDecl: {
-	oneOf: [
-		#FunctionDeclaration,
-		#VariableDeclaration,
-		#ClassDecl,
-		#StructDecl,
-		// ...
-	]
-}
-
-// ------------------------------------------------------------
-// 示例：变量声明
-// ------------------------------------------------------------
+```cue
 #VariableDeclaration: {
-	kind: "decl"
-	attrs?: [...#Attribute]
-	mods?:  [...#Modifier]
-	binding: "let" | "var"
-	pattern: #Pattern
-	typeAnno?: #TypeAnnotation
-	init?: {
-		"=":  "="
-		expr: #Expression
-	}
-	constraints: [
-		"若 binding 为 'let'，变量不可变。",
-	]
+    kind: "decl"
+    syntax: {
+        immutable:    "let name: Type = value"
+        mutable:      "var name: Type = value"
+        compileConst: "const name = value"
+    }
+    rules: [
+        "let 声明的变量不可修改",
+        "var 声明的变量可修改",
+        "const 编译期常量，深度不可变",
+    ]
 }
-CUE 设计的核心优势体现
-1. 类型约束即文档
-cue
-#Parameter: {
-	external?: #Identifier
-	local:     #Identifier
-	":":       ":"
-	type:      #Type
-	default?: {
-		"=":  "="
-		expr: #Expression
-	}
-}
-这里明确定义了参数的结构，任何不符合此结构的数据在 CUE 评估时会直接报错。
+```
 
-2. 继承与组合
-cue
-#Identifier: #Token & {
-	pattern: "^`?[a-zA-Z_][a-zA-Z0-9_]*`?$"
-}
-#Identifier 继承了 #Token 的所有字段并扩展了 pattern 约束。
+### 2. 分类组织
 
-3. 枚举与互斥
-cue
+按语言特性分为 24 个模块：
+
+| 编号 | 模块 | CUE 定义 |
+|------|------|---------|
+| 1 | 词法基础 | `#Identifier`, `#Keywords` |
+| 2 | 基础数据类型 | `#IntegerType`, `#FloatType`, `#BoolType`, `#RuneType`, `#StringType`, `#UnitType`, `#NothingType`, `#TupleType`, `#ArrayType`, `#VArrayType`, `#RangeType`, `#OptionType` |
+| 3 | 变量声明 | `#VariableDeclaration` |
+| 4 | 函数 | `#FunctionDeclaration`, `#LambdaExpression` |
+| 5 | 控制流 | `#IfExpression`, `#WhileLoop`, `#ForInLoop`, `#MatchExpression` |
+| 6 | 类型系统 | `#TypeSystem` |
+| 7 | 类 | `#ClassDeclaration` |
+| 8 | 结构体 | `#StructDeclaration` |
+| 9 | 接口 | `#InterfaceDeclaration` |
+| 10 | 枚举 | `#EnumDeclaration` |
+| 11 | 泛型 | `#Generics` |
+| 12 | 集合类型 | `#Collections` |
+| 13 | 错误处理 | `#ErrorHandling` |
+| 14 | 并发 | `#Concurrency` |
+| 15 | 操作符重载 | `#OperatorOverloading` |
+| 16 | 模式匹配 | `#PatternMatching` |
+| 17 | 包和导入 | `#PackageSystem` |
+| 18 | 扩展 | `#Extension` |
+| 19 | 宏与注解 | `#MacrosAndAnnotations` |
+| 20 | 常量表达式 | `#ConstExpressions` |
+| 21 | 入口函数 | `#MainFunction` |
+| 22 | 类型转换 | `#TypeConversion` |
+| 23 | 属性 | `#Property` |
+| 24 | 综合示例 | `#ComprehensiveExample` |
+
+### 3. 实用性导向
+
+每个定义包含：
+- **syntax**: 语法模板和示例
+- **rules/constraints**: 关键规则和约束
+- **examples**: 可运行的代码示例
+- **notes**: 常见陷阱提示
+
+### 4. 经过验证的描述
+
+所有语法描述均通过仓颉 SDK 1.0.5 编译验证，确保准确性。验证覆盖了以下核心特性：
+
+- ✅ 基础数据类型（Int/Float/Bool/Rune/String/Unit/Tuple/Array/Range/Option）
+- ✅ 变量声明（let/var/const）
+- ✅ 函数（普通函数、命名参数、默认值、Lambda、管道操作符）
+- ✅ 控制流（if-else、while、for-in、match 模式匹配、if-let）
+- ✅ 类（继承、open/override、属性 prop、构造函数、is/as 类型操作）
+- ✅ 结构体（值语义、mut 方法、操作符重载、下标操作符）
+- ✅ 接口（默认实现、多接口实现）
+- ✅ 枚举（关联值、递归枚举、成员方法）
+- ✅ 泛型（泛型类、泛型函数）
+- ✅ 集合（ArrayList、HashMap、HashSet）
+- ✅ 错误处理（自定义异常、try-catch-finally）
+- ✅ 操作符重载（二元、一元、下标 get/set）
+- ✅ 扩展（extend）
+- ✅ 并发（spawn、AtomicInt64、Mutex、synchronized）
+- ✅ 属性（prop/mut prop）
+- ✅ 常量表达式（const func）
+- ✅ 类型别名与类型转换
+
+### 5. 已验证的关键细节
+
+通过编译验证发现并记录的重要细节：
+
+| 特性 | 正确用法 | 常见错误 |
+|------|---------|---------|
+| 类继承 | `open class Base` | `class Base`（不加 open 无法继承） |
+| Lambda 参数 | `{ x: Int64 => x }` | `{ (x: Int64) => x }` |
+| 数组构造 | `Array<Int64>(3, repeat: 0)` | `Array<Int64>(3, item: 0)` |
+| 下标 set | `operator func [](i: Int64, value!: T)` | `operator func []=(i, v)` |
+| struct 下标 set | `mut operator func [](...)` | `operator func [](...)` |
+| ArrayList 添加 | `list.add(item)` | `list.append(item)` |
+| HashMap 添加 | `map.add(k, v)` 或 `map[k] = v` | `map.put(k, v)` |
+| 主构造函数 | 写在类体内部 `{ ClassName(let x: T) {} }` | 写在类名后 `class C(let x: T)` |
+| 捕获 var 的闭包 | 必须直接调用 `{ => count += 1 }()` | 不能赋值给变量 |
+| 原子类型 | `AtomicInt64`, `AtomicBool` | `Atomic<Int64>` |
+
+## CUE 设计优势
+
+### 类型约束即文档
+
+```cue
+#FunctionDeclaration: {
+    kind: "decl"
+    parameters: {
+        named: {
+            syntax:  "func f(value: Int64, indent!: Int64 = 2): String { ... }"
+            call:    "f(42, indent: 4)"
+            rule:    "命名参数用 ! 标记，调用时用 参数名: 值"
+        }
+    }
+}
+```
+
+### 枚举与互斥
+
+```cue
 binding: "let" | "var"        // 二选一
 throws?: "throws" | "rethrows" // 可选但二选一
-4. 重复与分隔符
-cue
-params: [...#Parameter] & {separator: ","}
-利用 CUE 的结构体合并特性，可以为列表附加元数据（如分隔符），这在普通 JSON/YAML 中难以优雅表达。
+```
 
-5. 自校验与模块化
-可以将 #Token、#Type 等定义在独立的 .cue 文件中，通过 import 复用。
+### 自校验与模块化
 
-使用 cue vet 命令即可验证整个语法描述文件是否自洽。
+可以将各定义在独立的 `.cue` 文件中，通过 `import` 复用。使用 `cue vet` 命令即可验证整个语法描述文件是否自洽。
+
+## 文件结构
+
+```
+cangjie.cue    — 仓颉语言核心语法 CUE 描述（已验证）
+design.md      — 本设计文档
+```
