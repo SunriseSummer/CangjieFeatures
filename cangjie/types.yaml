@@ -281,8 +281,8 @@
     summary: Condition variable created via mutex.condition(). Must be created while holding the lock.
     import: std.sync.*
     notes:
-      - "wait(): indefinite. wait(timeout): may throw TimeoutException."
-      - "waitUntil(predicate): loop-based wait (avoids spurious wakeups)."
+      - "wait(): indefinite block. wait(timeout!: Duration): Bool — returns false on timeout."
+      - "waitUntil(predicate): loop-based wait (avoids spurious wakeups). waitUntil(predicate, timeout!: Duration): Bool."
       - "notify() and notifyAll() to signal."
 
   - id: SyncCounter
@@ -409,15 +409,16 @@
     kind: reference
     summary: Base class for catchable exceptions. User-defined exceptions must inherit from Exception (not Error).
     notes:
-      - "API: init(), init(message), prop message: String, toString(), getClassName(), printStackTrace()."
+      - "API: init(), init(message), prop message: String, open func toString(): String, func printStackTrace(): Unit."
+      - "User subclasses should override func getClassName(): String to return the class name (used by toString for the type prefix)."
       - "Built-in: ArithmeticException, IllegalArgumentException, IllegalStateException, IndexOutOfBoundsException, NegativeArraySizeException, NoneValueException, OverflowException (<: ArithmeticException), ConcurrentModificationException, TimeoutException, IllegalSynchronizationStateException."
 
   - id: Error
     kind: reference
     summary: Internal system or resource exhaustion error. Applications should not throw or inherit Error.
     notes:
-      - "API: init(), init(message), prop message: String, toString(), printStackTrace()."
-      - "No getClassName() unlike Exception."
+      - "API: init(), init(message), prop message: String, func toString(): String, func printStackTrace(): Unit."
+      - "No getClassName() - Error subclasses do not support class name override."
 
   # ---- Reflection ----
   - id: TypeInfo
