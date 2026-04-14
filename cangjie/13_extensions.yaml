@@ -9,6 +9,7 @@ direct:
     import std.collection.*
     extend String {
         public func isPalindrome(): Bool {
+            // String.runes() → Rune iterator; collect to Array for indexed access
             let list = ArrayList<Rune>()
             for (r in this.runes()) { list.add(r) }
             let chars = list.toArray()
