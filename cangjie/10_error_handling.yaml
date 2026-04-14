@@ -4,11 +4,13 @@
 exception_hierarchy:
   root_types:
     Error: |
-      System/resource errors — should NOT be caught or thrown manually.
+      System/resource errors — should NOT be caught, thrown, or subclassed by applications.
+      Only for safe program termination.
       Examples: OutOfMemoryError, StackOverflowError
     Exception: |
       Logic/IO errors — can be caught and handled.
       Base class for all user-defined exceptions.
+      Developers can and should inherit Exception for custom error types.
 
   exception_class:
     constructors:
@@ -92,6 +94,10 @@ try_catch_finally:
             func isClosed(): Bool
             func close(): Unit
         }
+    rules:
+      - "catch and finally blocks are optional"
+      - "try-with-resources expression always returns Unit"
+      - "close() is called even if an exception is thrown"
 
 option_based_error_handling:
   description: |

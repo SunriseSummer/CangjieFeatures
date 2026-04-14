@@ -7,6 +7,9 @@ thread_model:
     Cangjie uses lightweight user-level threads (language threads)
     scheduled cooperatively/preemptively onto a smaller set of OS threads.
     Language threads are cheap to create and context-switch.
+  important: |
+    When the main thread exits, all spawned threads are killed immediately,
+    even if they have not completed. Use Future.get() to wait for results.
 
 thread_creation:
   spawn:
@@ -35,6 +38,7 @@ future:
       func get(timeout: Duration): T
       // Blocks up to timeout duration
       // Throws TimeoutException if not completed in time
+      // If timeout <= Duration.Zero, behaves like get() (no timeout)
     try_get: |
       func tryGet(): Option<T>
       // Non-blocking; returns None if not yet completed
@@ -57,6 +61,7 @@ thread_class:
   sleep: |
     import std.time.Duration
     sleep(Duration.second * 2)  // sleep current thread 2 seconds
+    // If duration <= Duration.Zero, thread yields execution but does not sleep
   uncaught_handler: |
     thread.handleUncaughtExceptionBy { (t: Thread, e: Exception) =>
         println("Thread ${t.id} crashed: ${e}")
@@ -66,6 +71,9 @@ synchronization:
   atomic:
     description: "Typed atomic wrappers for lock-free operations"
     types: "AtomicInt8, AtomicInt16, AtomicInt32, AtomicInt64, AtomicUInt8-64, AtomicBool, AtomicReference<T>"
+    restrictions:
+      - "AtomicReference<T> requires T to be a reference type (class, not struct)"
+      - "compareAndSwap on AtomicReference compares object identity, not value equality"
     operations:
       basic: ["load()", "store(val)", "swap(val)", "compareAndSwap(old, new): Bool"]
       integer_only: |
@@ -102,45 +110,80 @@ synchronization:
           // critical section
       }
     note: "Preferred over manual lock/unlock for safety"
+    expression: "synchronized is an expression — it returns the value of the block"
+    auto_release: "Lock is released on exit via break, continue, return, or throw"
 
   condition_variable:
-    creation: "let cond = mtx.condition()  // mutex must be locked"
+    creation: "let cond = mtx.condition()  // mutex must be locked when calling condition()"
     methods:
-      - "wait(): Unit                           // release lock and wait"
-      - "wait(timeout: Duration): Bool            // wait with timeout; false on timeout"
-      - "notify(): Unit                           // wake one waiting thread"
-      - "notifyAll(): Unit                        // wake all waiting threads"
+      - "wait(): Unit                                      // release lock and wait"
+      - "wait(timeout!: Duration): Bool                    // wait with timeout; false on timeout"
+      - "waitUntil(predicate: ()->Bool): Unit              // wait until predicate returns true"
+      - "waitUntil(predicate: ()->Bool, timeout!: Duration): Bool  // wait with predicate and timeout"
+      - "notify(): Unit                                    // wake one waiting thread"
+      - "notifyAll(): Unit                                 // wake all waiting threads"
+    rules:
+      - "Must hold the associated lock when calling wait(), notify(), notifyAll()"
+      - "Always use wait() inside a while-loop to handle spurious wakeups"
+      - "One Mutex can create multiple Condition instances"
     pattern: |
       // Producer-consumer pattern
       import std.sync.*
+
+      // Use a class wrapper for shared mutable state
+      // (local var cannot be captured by spawn lambdas)
+      class Shared { public var ready = false }
+      let data = Shared()
+
       let mtx = Mutex()
       // Note: mtx must be locked before calling condition()
       mtx.lock()
       let cond = mtx.condition()
       mtx.unlock()
-      var ready = false
 
       // Consumer
-      spawn { =>
+      let f1 = spawn { =>
           mtx.lock()
-          while (!ready) { cond.wait() }
+          while (!data.ready) { cond.wait() }
           mtx.unlock()
       }
 
       // Producer
-      spawn { =>
+      let f2 = spawn { =>
           mtx.lock()
-          ready = true
+          data.ready = true
           cond.notifyAll()
           mtx.unlock()
       }
+      f1.get()
+      f2.get()
 
   thread_local:
     syntax: |
       let tls = ThreadLocal<Int64>()  // from core package, no import needed
     usage: |
-      tls.set(42)            // set thread-local value
+      tls.set(42)            // set thread-local value (wraps as Some(42))
+      tls.set(None)          // remove thread-local value
       tls.get()              // returns Option<T> — Some(v) or None
+
+  sync_counter:
+    description: "Thread coordination utility for waiting on multiple threads"
+    syntax: |
+      import std.sync.*
+      let counter = SyncCounter(3)
+    methods:
+      - "dec(): Unit                    // decrement counter by 1"
+      - "waitUntilZero(): Unit          // block until counter reaches 0"
+    example: |
+      import std.sync.*
+      let counter = SyncCounter(3)
+      for (i in 0..3) {
+          spawn { =>
+              // do work...
+              counter.dec()
+          }
+      }
+      counter.waitUntilZero()  // wait for all 3 threads
 
 cancellation:
   mechanism: |

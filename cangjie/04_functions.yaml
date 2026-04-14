@@ -17,6 +17,7 @@ function_declaration:
   named_parameters:
     syntax: "func f(name!: Type)  # caller uses f(name: value)"
     with_default: "func f(name!: Type = defaultValue)"
+    ordering_rule: "Non-named parameters must come before named parameters"
     example: |
       func connect(host: String, port!: Int64 = 8080): Unit {
           println("${host}:${port}")
@@ -56,6 +57,12 @@ lambda_and_closures:
 
   trailing_lambda:
     description: "When last parameter is a function, lambda can follow the call"
+    single_param_rule: |
+      If the function has only one parameter (a Lambda), parentheses can be omitted entirely:
+        doWork { => println("working") }
+    arrow_omit_rule: |
+      In trailing lambda position, => can be omitted when there are no parameters:
+        doWork { println("working") }
     example: |
       func doWork(callback: () -> Unit): Unit { callback() }
       doWork { => println("working") }  // trailing lambda
@@ -69,7 +76,11 @@ lambda_and_closures:
     description: "Lambdas capture variables from enclosing scope"
     capture_rules:
       - "Immutable (let) variables: captured freely"
-      - "Mutable (var) variables: lambda that captures var CANNOT be stored — must be called directly"
+      - "Mutable (var) variables: lambda that captures var CANNOT escape — must be called directly"
+      - "Cannot assign to variable, return, or pass as argument"
+    transitive_capture: |
+      If function f calls function g that captures a var variable (not local to f),
+      then f is also treated as capturing that var and cannot escape either.
     immutable_capture: |
       let base = 100
       let addBase = { x: Int64 => x + base }

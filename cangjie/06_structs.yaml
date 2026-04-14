@@ -73,7 +73,10 @@ mutability:
       - "Can only be called on var-bound struct instances"
       - "Can modify var fields of the struct"
       - "Cannot be static"
-      - "Cannot capture this in closures inside mut func"
+      - "this cannot be captured by Lambda or nested functions"
+      - "this cannot be used as an expression (e.g., cannot be returned)"
+      - "Instance member variables cannot be captured by Lambda inside mut func"
+      - "Non-mut instance functions cannot call mut functions"
     example: |
       struct Counter {
           var count: Int64 = 0
@@ -106,3 +109,21 @@ restrictions:
   - "Cannot define struct for built-in primitive types"
   - "No destructor (~init)"
   - "No open/abstract/sealed/override/redef modifiers"
+
+properties:
+  immutable: |
+    prop name: Type { get() { expression } }
+  mutable: |
+    mut prop name: Type {
+        get() { expression }
+        set(v) { /* assign */ }
+    }
+  note: "mut prop setters behave like mut functions — only callable on var-bound instances"
+
+interface_implementation:
+  rules:
+    - "Struct must exactly match mut modifier: mut function ↔ mut function, non-mut ↔ non-mut"
+    - "Class implementations ignore mut modifier (class instance methods can always modify state)"
+  boxing_behavior: |
+    Assigning a struct instance to an interface-typed variable copies the struct.
+    Calling a mut function via the interface variable modifies the copy, NOT the original.

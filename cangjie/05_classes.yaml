@@ -41,7 +41,11 @@ member_variables:
       static init() {
           // initialize static members
       }
-    note: "Called once before first access to any static member"
+    rules:
+      - "Called once before first access to any static member"
+      - "Must initialize all uninitialized static member variables"
+      - "No access modifier allowed on static init"
+      - "At most one per class"
 
 constructors:
   regular:
@@ -49,6 +53,10 @@ constructors:
       init(params) {
           // must initialize all uninitialized member variables
       }
+    execution_order: |
+      1. Member default-value initializers (outside constructor body)
+      2. Implicit or explicit super() call
+      3. Constructor body
     delegation: |
       init(name: String) {
           this(name, 0)  // delegates to another constructor
@@ -78,8 +86,9 @@ constructors:
       }
     rules:
       - "Called during garbage collection (non-deterministic timing)"
-      - "Only allowed in non-open classes"
+      - "Only allowed in non-open classes (class with ~init cannot be marked open)"
       - "Cannot be manually called"
+      - "At most one per class"
 
 inheritance:
   single_inheritance:

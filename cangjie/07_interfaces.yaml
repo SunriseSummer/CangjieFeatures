@@ -90,7 +90,18 @@ interface_inheritance:
     }
   diamond: |
     If two parent interfaces provide the same default implementation,
-    the implementing class must override it to resolve ambiguity.
+    the implementing class/struct must override it to resolve ambiguity.
+    The compiler will report an error if conflicting defaults are not resolved.
+
+mut_function_rules:
+  description: "How mut functions in interfaces interact with class and struct implementations"
+  class_behavior: |
+    Class implementations IGNORE the mut modifier on interface functions.
+    Class instance methods can always modify instance state regardless of mut.
+  struct_behavior: |
+    Struct implementations MUST exactly match the mut modifier:
+    - mut function in interface → must be mut function in struct
+    - non-mut function in interface → must be non-mut function in struct
 
 sealed_interface:
   syntax: |
