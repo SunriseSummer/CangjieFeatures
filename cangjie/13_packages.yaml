@@ -2,17 +2,16 @@
 # Packages, modules, imports, visibility
 
 package_structure:
-  package: |
-    Minimum compilation unit with its own namespace.
-    Declared in source files; maps to directory structure.
-  module: |
-    Collection of packages; minimum distribution unit.
-    At most one main() entry point per module.
+  package:
+    - "Minimum compilation unit with its own namespace"
+    - "Declared in source files, maps to directory structure"
+    - "At most one main() entry point per package"
+  module: "Collection of packages; minimum distribution unit"
   source_layout: |
     project_root/
     ├── cjpm.toml          # project configuration
     └── src/
-        ├── main.cj        # root package (package default)
+        ├── main.cj        # root package, the default package name is "default"
         ├── utils/
         │   └── helper.cj  # package default.utils
         └── models/
@@ -20,16 +19,16 @@ package_structure:
 
 package_declaration:
   syntax: |
-    package packageName           // simple package
-    package parent.child          // nested package
+    package packageName           // simple/root package
+    package parent.child          // nested/sub package
   rules:
     - "Must be first non-comment statement in file"
     - "Must match relative path from src/ directory"
     - "Folder name must match package name"
     - "Files without package declaration belong to 'default' package"
   examples:
-    - "// src/main.cj → package default (implicit)"
-    - "// src/utils/helper.cj → package default.utils"
+    - "package default // src/main.cj"
+    - "package default.utils // src/utils/helper.cj"
 
 imports:
   basic:
@@ -98,11 +97,11 @@ project_management:
   tool: cjpm
   config_file: cjpm.toml
   commands:
-    init: "cjpm init             # create new project"
-    build: "cjpm build           # compile project"
-    run: "cjpm run               # build and execute"
-    test: "cjpm test             # run tests"
-    clean: "cjpm clean           # remove build artifacts"
+    init: "cjpm init"             # create new project
+    build: "cjpm build"           # compile project
+    run: "cjpm run"               # build and execute
+    test: "cjpm test"             # run tests
+    clean: "cjpm clean"           # remove build artifacts
   config_example: |
     [package]
     name = "myapp"
