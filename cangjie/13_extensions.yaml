@@ -11,7 +11,7 @@ direct_extension:
   example: |
     extend String {
         public func isPalindrome(): Bool {
-            let chars = Array<Rune>(this)
+            let chars = this.toRuneArray()
             var i = 0
             var j = chars.size - 1
             while (i < j) {

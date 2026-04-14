@@ -59,8 +59,8 @@ thread_class:
       thread.hasPendingCancellation  // Bool
       // Check in long-running loops for cooperative cancellation
   sleep: |
-    import std.time.Duration
     sleep(Duration.second * 2)  // sleep current thread 2 seconds
+    // Duration is in core package — no import needed
     // If duration <= Duration.Zero, thread yields execution but does not sleep
   uncaught_handler: |
     thread.handleUncaughtExceptionBy { (t: Thread, e: Exception) =>
