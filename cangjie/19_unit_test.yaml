@@ -233,5 +233,5 @@ cli_options:
   - { option: "--report-path / --report-format", description: "Report output (xml/csv/html)" }
   - { option: "--dry-run", description: "Print test list without running" }
   - { option: "--no-capture-output", description: "Don't capture stdout" }
-  - { option: "--bench", description: "Run benchmarks" }
+  - { option: "--bench", description: "Run benchmarks (alternative to cjpm bench)" }
   - { option: "--coverage-guided", description: "Coverage-guided testing" }
