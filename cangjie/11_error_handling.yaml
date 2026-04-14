@@ -1,39 +1,14 @@
-# Cangjie Error Handling
-# Exceptions, Option-based error handling, try/catch
-
 exception_hierarchy:
-  root_types:
-    Error: |
-      System/resource errors — should NOT be caught, thrown, or subclassed by applications.
-      Only for safe program termination.
-      Examples: OutOfMemoryError, StackOverflowError
-    Exception: |
-      Logic/IO errors — can be caught and handled.
-      Base class for all user-defined exceptions.
-      Developers can and should inherit Exception for custom error types.
-
-  exception_class:
-    constructors:
-      - "init()"
-      - "init(message: String)"
-    members:
-      - "message: String"                  # error message
-      - "toString(): String"               # string representation
-      - "printStackTrace(): Unit"          # print stack trace
-
-  custom_exception: |
+  Error: "System/resource errors — should NOT be caught or subclassed (OutOfMemoryError, StackOverflowError)"
+  Exception: "Logic/IO errors — can be caught and handled; base for custom exceptions"
+  custom: |
     open class BusinessException <: Exception {
-        public init(msg: String) {
-            super(msg)
-        }
+        public init(msg: String) { super(msg) }
     }
     class InsufficientFundsException <: BusinessException {
-        public init(amount: Float64) {
-            super("Insufficient funds: ${amount}")
-        }
+        public init(amount: Float64) { super("Insufficient funds: ${amount}") }
     }
-
-  common_runtime_exceptions:
+  common_runtime:
     - ArithmeticException
     - IllegalArgumentException
     - NegativeArraySizeException
@@ -44,18 +19,12 @@ exception_hierarchy:
 
 throwing:
   syntax: "throw ExceptionInstance"
+  unchecked: "No throws declaration; compiler does NOT enforce catching; unhandled exceptions crash at runtime"
   example: |
     func divide(a: Int64, b: Int64): Int64 {
-        if (b == 0) {
-            throw ArithmeticException("Division by zero")
-        }
+        if (b == 0) { throw ArithmeticException("Division by zero") }
         return a / b
     }
-  unchecked: |
-    Exceptions are UNCHECKED in Cangjie:
-    - No throws declaration in function signature
-    - Compiler does NOT enforce catching
-    - Unhandled exceptions crash at runtime with stack trace
 
 try_catch_finally:
   basic: |
@@ -68,68 +37,39 @@ try_catch_finally:
     } finally {
         cleanup()
     }
-
   as_expression: |
-    let result = try {
-        parseInt(input)
-    } catch (_: Exception) {
-        0  // default value on error
-    }
-
+    let result = try { parseInt(input) } catch (_: Exception) { 0 }
   catch_patterns:
-    type_pattern: "catch (e: ExceptionType)"
+    type: "catch (e: ExceptionType)"
     multi_type: "catch (e: Type1 | Type2)"
     wildcard: "catch (_)"
-    note: "catch blocks are tried in order; first match wins"
-
+    note: "Tried in order; first match wins"
   try_with_resources:
     syntax: |
       try (resource = acquireResource()) {
           useResource(resource)
       }
       // resource.close() called automatically
-    requirement: |
-      Resource must implement Resource interface:
-        interface Resource {
-            func isClosed(): Bool
-            func close(): Unit
-        }
-    rules:
-      - "catch and finally blocks are optional"
-      - "try-with-resources expression always returns Unit"
-      - "close() is called even if an exception is thrown"
+    requirement: "Resource must implement Resource interface { isClosed(): Bool; close(): Unit }"
+    notes:
+      - "catch and finally are optional"
+      - "Always returns Unit"
+      - "close() called even if exception thrown"
 
 option_based_error_handling:
-  description: |
-    Use Option<T> for predictable "no value" scenarios
-    instead of exceptions.
-
-  coalescing: |
-    let name = optionalName ?? "Anonymous"
-    // Returns optionalName if Some, otherwise "Anonymous"
-
-  optional_chaining: |
-    let len = user?.profile?.name?.size
-    // Returns ?Int64; None if any step is None
-
-  get_or_throw: |
-    let value = opt.getOrThrow()
-    // Throws NoneValueException if None
-
+  coalescing: "let name = optionalName ?? \"Anonymous\""
+  chaining: "let len = user?.profile?.name?.size"
+  unwrap: "opt.getOrThrow()  // throws NoneValueException if None"
   pattern_match: |
     match (findUser(id)) {
         case Some(user) => println(user.name)
         case None => println("User not found")
     }
-
   if_let: |
-    if (let Some(user) <- findUser(id)) {
-        println(user.name)
-    }
+    if (let Some(user) <- findUser(id)) { println(user.name) }
 
 best_practices:
-  - "Use Exception for exceptional/unexpected failures"
-  - "Use Option<T> for expected absence of values"
-  - "Catch specific exception types, not bare Exception"
+  - "Exception for unexpected failures; Option<T> for expected absence"
+  - "Catch specific types, not bare Exception"
   - "Use try-with-resources for Resource implementations"
   - "Custom exceptions should extend Exception, not Error"

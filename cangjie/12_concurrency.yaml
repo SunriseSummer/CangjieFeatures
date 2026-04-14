@@ -1,67 +1,33 @@
-# Cangjie Concurrency
-# Lightweight threads, synchronization, futures
-
 thread_model:
-  type: "M:N (M language threads on N native threads)"
-  description: |
-    Cangjie uses lightweight user-level threads (language threads)
-    scheduled cooperatively/preemptively onto a smaller set of OS threads.
-    Language threads are cheap to create and context-switch.
-  important: |
-    When the main thread exits, all spawned threads are killed immediately,
-    even if they have not completed. Use Future.get() to wait for results.
+  type: "M:N (M language threads on N OS threads)"
+  note: "Lightweight, cheap to create. When main exits, all spawned threads are killed immediately."
 
-thread_creation:
-  spawn:
-    syntax: |
-      let future = spawn {
-          // code runs in new lightweight thread
-          computeResult()
-      }
-    returns: "Future<T> where T is the lambda return type"
-    example: |
-      let f: Future<Int64> = spawn { =>
-          var sum = 0
-          for (i in 1..=100) { sum += i }
-          sum
-      }
-      println(f.get())  // blocks until done, prints 5050
+spawn:
+  syntax: |
+    let future = spawn {
+        computeResult()
+    }
+  returns: "Future<T>"
+  example: |
+    let f: Future<Int64> = spawn { =>
+        var sum = 0
+        for (i in 1..=100) { sum += i }
+        sum
+    }
+    println(f.get())  // 5050
 
 future:
-  type: "Future<T>"
   methods:
-    get: |
-      func get(): T
-      // Blocks until thread completes; returns result
-      // Re-throws if thread threw an exception
-    get_timeout: |
-      func get(timeout: Duration): T
-      // Blocks up to timeout duration
-      // Throws TimeoutException if not completed in time
-      // If timeout <= Duration.Zero, behaves like get() (no timeout)
-    try_get: |
-      func tryGet(): Option<T>
-      // Non-blocking; returns None if not yet completed
-    cancel: |
-      func cancel(): Unit
-      // Sends cancellation request to the thread
-      // Thread must check hasPendingCancellation to cooperate
-    thread: |
-      prop thread: Thread
-      // Access the underlying Thread object
+    get: "Blocks until done; re-throws on exception"
+    get_timeout: "get(timeout: Duration) — throws TimeoutException"
+    tryGet: "Non-blocking → Option<T>"
+    cancel: "Sends cancellation request (cooperative)"
+  thread_prop: "future.thread → Thread object"
 
-thread_class:
-  static_members:
-    current_thread: "Thread.currentThread  // get current thread"
-  instance_members:
-    id: "thread.id  // unique Int64 identifier"
-    has_pending_cancellation: |
-      thread.hasPendingCancellation  // Bool
-      // Check in long-running loops for cooperative cancellation
-  sleep: |
-    import std.time.Duration
-    sleep(Duration.second * 2)  // sleep current thread 2 seconds
-    // If duration <= Duration.Zero, thread yields execution but does not sleep
+thread:
+  static: "Thread.currentThread"
+  instance: "thread.id: Int64 / thread.hasPendingCancellation: Bool"
+  sleep: "sleep(Duration.second * 2)"
   uncaught_handler: |
     thread.handleUncaughtExceptionBy { (t: Thread, e: Exception) =>
         println("Thread ${t.id} crashed: ${e}")
@@ -69,17 +35,10 @@ thread_class:
 
 synchronization:
   atomic:
-    description: "Typed atomic wrappers for lock-free operations"
-    types: "AtomicInt8, AtomicInt16, AtomicInt32, AtomicInt64, AtomicUInt8-64, AtomicBool, AtomicReference<T>"
-    restrictions:
-      - "AtomicReference<T> requires T to be a reference type (class, not struct)"
-      - "compareAndSwap on AtomicReference compares object identity, not value equality"
+    types: "AtomicInt8-64, AtomicUInt8-64, AtomicBool, AtomicReference<T> (T must be reference type)"
     operations:
-      basic: ["load()", "store(val)", "swap(val)", "compareAndSwap(old, new): Bool"]
-      integer_only: |
-        fetchAdd(val), fetchSub(val)
-        fetchAnd(val), fetchOr(val), fetchXor(val)
-        // All return value BEFORE the operation
+      basic: [load(), store(val), swap(val), "compareAndSwap(old, new): Bool"]
+      integer_only: [fetchAdd(val), fetchSub(val), fetchAnd(val), fetchOr(val), fetchXor(val)]
     example: |
       import std.sync.*
       let counter = AtomicInt64(0)
@@ -89,66 +48,39 @@ synchronization:
       println(counter.load())  // 2
 
   mutex:
-    type: "Mutex"
-    methods:
-      - "lock(): Unit       // block until acquired"
-      - "unlock(): Unit     // release lock"
-      - "tryLock(): Bool    // non-blocking attempt"
+    methods: ["lock()", "unlock()", "tryLock(): Bool"]
     example: |
       import std.sync.*
       let mtx = Mutex()
       mtx.lock()
-      try {
-          // critical section
-      } finally {
-          mtx.unlock()
-      }
+      try { /* critical section */ } finally { mtx.unlock() }
 
   synchronized:
-    syntax: |
-      synchronized(lockObject) {
-          // critical section
-      }
-    note: "Preferred over manual lock/unlock for safety"
-    expression: "synchronized is an expression — it returns the value of the block"
-    auto_release: "Lock is released on exit via break, continue, return, or throw"
+    syntax: "synchronized(lockObject) { /* critical section */ }"
+    note: "Expression — returns block value; auto-releases on exit"
 
   condition_variable:
-    creation: "let cond = mtx.condition()  // mutex must be locked when calling condition()"
+    creation: "let cond = mtx.condition()  // mutex must be locked"
     methods:
-      - "wait(): Unit                                      // release lock and wait"
-      - "wait(timeout!: Duration): Bool                    // wait with timeout; false on timeout"
-      - "waitUntil(predicate: ()->Bool): Unit              // wait until predicate returns true"
-      - "waitUntil(predicate: ()->Bool, timeout!: Duration): Bool  // wait with predicate and timeout"
-      - "notify(): Unit                                    // wake one waiting thread"
-      - "notifyAll(): Unit                                 // wake all waiting threads"
+      - "wait() / wait(timeout!: Duration): Bool"
+      - "waitUntil(predicate: ()->Bool) / waitUntil(predicate, timeout!: Duration): Bool"
+      - "notify() / notifyAll()"
     rules:
-      - "Must hold the associated lock when calling wait(), notify(), notifyAll()"
-      - "Always use wait() inside a while-loop to handle spurious wakeups"
-      - "One Mutex can create multiple Condition instances"
+      - "Must hold lock when calling wait/notify"
+      - "Always wait() inside while-loop (spurious wakeups)"
     pattern: |
-      // Producer-consumer pattern
       import std.sync.*
-
-      // Use a class wrapper for shared mutable state
-      // (mutable local var cannot be captured by escaping lambdas like spawn)
       class Shared { public var ready = false }
       let data = Shared()
-
       let mtx = Mutex()
-      // Note: mtx must be locked before calling condition()
       mtx.lock()
       let cond = mtx.condition()
       mtx.unlock()
-
-      // Consumer
       let f1 = spawn { =>
           mtx.lock()
           while (!data.ready) { cond.wait() }
           mtx.unlock()
       }
-
-      // Producer
       let f2 = spawn { =>
           mtx.lock()
           data.ready = true
@@ -159,42 +91,21 @@ synchronization:
       f2.get()
 
   thread_local:
-    syntax: |
-      let tls = ThreadLocal<Int64>()  // from core package, no import needed
-    usage: |
-      tls.set(42)            // set thread-local value (auto-wrapped to Some(42))
-      tls.set(None)          // remove thread-local value (set accepts Option<T>)
-      tls.get()              // returns Option<T> — Some(v) or None
+    syntax: "let tls = ThreadLocal<Int64>()"
+    usage: "tls.set(42) / tls.set(None) / tls.get(): Option<T>"
 
   sync_counter:
-    description: "Thread coordination utility for waiting on multiple threads"
-    syntax: |
-      import std.sync.*
-      let counter = SyncCounter(3)
-    methods:
-      - "dec(): Unit                    // decrement counter by 1"
-      - "waitUntilZero(): Unit          // block until counter reaches 0"
+    syntax: "let counter = SyncCounter(3)"
+    methods: ["dec()", "waitUntilZero()"]
     example: |
       import std.sync.*
       let counter = SyncCounter(3)
       for (i in 0..3) {
-          spawn { =>
-              // do work...
-              counter.dec()
-          }
+          spawn { => /* work... */ counter.dec() }
       }
-      counter.waitUntilZero()  // wait for all 3 threads
+      counter.waitUntilZero()
 
 cancellation:
   mechanism: |
-    Cooperative cancellation:
     1. Caller: future.cancel()
     2. Thread checks: Thread.currentThread.hasPendingCancellation
-  example: |
-    let f = spawn { =>
-        while (!Thread.currentThread.hasPendingCancellation) {
-            doWork()
-        }
-    }
-    sleep(Duration.second)
-    f.cancel()

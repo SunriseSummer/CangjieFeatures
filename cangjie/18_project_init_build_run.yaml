@@ -1,151 +1,105 @@
-# Cangjie Project Management
-# cjpm commands, project creation, configuration, build, run, test
+commands:
+  init: "cjpm init"
+  init_lib: "cjpm init --type=static"
+  init_workspace: "cjpm init --workspace"
+  build: "cjpm build"
+  run: "cjpm run"
+  test: "cjpm test"
+  bench: "cjpm bench"
+  clean: "cjpm clean"
+  install: "cjpm install"
+  tree: "cjpm tree"
 
-cjpm_overview:
-  tool: cjpm
-  description: "Cangjie package manager — project init, build, run, test, dependency management"
-  config_file: cjpm.toml
+project_structure: |
+  myapp/
+  ├── cjpm.toml
+  ├── src/
+  │   ├── main.cj
+  │   ├── lib_test.cj      # _test.cj suffix
+  │   └── utils/
+  │       └── helper.cj
+  └── target/               # build output
 
-quick_start:
-  commands:
-    init: "cjpm init"                        # create executable project
-    init_lib: "cjpm init --type=static"      # create static library project
-    init_workspace: "cjpm init --workspace"  # create workspace
-    build: "cjpm build"                      # compile project
-    run: "cjpm run"                          # build and run
-    test: "cjpm test"                        # build and run tests
-    bench: "cjpm bench"                      # build and run benchmarks
-    clean: "cjpm clean"                      # remove build artifacts
-    install: "cjpm install"                  # install executable
-    tree: "cjpm tree"                        # show dependency tree
-
-project_structure:
-  layout: |
-    myapp/
-    ├── cjpm.toml              # project configuration
-    ├── src/
-    │   ├── main.cj            # main entry (executable type)
-    │   ├── lib_test.cj        # test file (_test.cj suffix)
-    │   └── utils/
-    │       └── helper.cj      # sub-package
-    └── target/                # build output (auto-generated)
-
-  minimal_main: |
-    // src/main.cj
-    package myapp
-
-    main(): Int64 {
-        println("Hello, Cangjie!")
-        return 0
-    }
+minimal_main: |
+  // src/main.cj
+  package myapp
+  main(): Int64 {
+      println("Hello, Cangjie!")
+      return 0
+  }
 
 cjpm_toml:
-  single_module:
-    example: |
-      [package]
-        cjc-version = "1.0.5"
-        name = "myapp"
-        version = "1.0.0"
-        output-type = "executable"
-    package_fields:
-      - cjc-version                # (required) Minimum cjc version
-      - name                       # (required) Module name / root package name
-      - version                    # (required) Module version
-      - output-type                # (required) "executable" | "static" | "dynamic"
-      - compile-option             # Extra compiler flags
-      - link-option                # Linker flags
-      - src-dir                    # Source directory path
-      - target-dir                 # Output directory path
+  single_module: |
+    [package]
+      cjc-version = "1.0.5"
+      name = "myapp"
+      version = "1.0.0"
+      output-type = "executable"    # "executable" | "static" | "dynamic"
+  package_fields: [cjc-version, name, version, output-type, compile-option, link-option, src-dir, target-dir]
 
-  workspace:
-    example: |
-      [workspace]
-        members = ["app", "libs/core", "libs/util"]
-    note: "[package] and [workspace] are mutually exclusive"
-    workspace_fields:
-      - members                    # (required) Member module paths
-      - build-members              # Subset to compile
-      - test-members               # Subset to test (must be subset of build-members)
-      - compile-option             # Global compiler flags
-      - link-option                # Global linker flags
+  workspace: |
+    [workspace]
+      members = ["app", "libs/core", "libs/util"]
+  workspace_fields: [members, build-members, test-members, compile-option, link-option]
+  note: "[package] and [workspace] are mutually exclusive"
 
 build_options:
-  flags:
-    - "-i, --incremental"          # Incremental compilation
-    - "-j, --jobs <N>"             # Parallel compilation threads
-    - "-g"                         # Debug build
-    - "-V, --verbose"              # Show compilation details
-    - "--coverage"                 # Enable coverage instrumentation
-    - "--cfg <value>"              # Conditional compilation variable
-    - "-m, --member <value>"       # Specify workspace member
-    - "--target <value>"           # Cross-compilation target
-    - "-o, --output <value>"       # Output binary name (default: main)
-    - "-l, --lint"                 # Enable cjlint code checking
-    - "--mock"                     # Enable mock support
+  - "-i, --incremental"
+  - "-j, --jobs <N>"
+  - "-g (debug build)"
+  - "-V, --verbose"
+  - "--coverage"
+  - "--cfg <value>"
+  - "-m, --member <value>"
+  - "--target <value>"
+  - "-o, --output <value>"
+  - "-l, --lint"
+  - "--mock"
 
 run_options:
-  flags:
-    - "--name <value>"             # Specify binary name to run
-    - "--build-args <value>"       # Arguments passed to build
-    - "--run-args <value>"         # Arguments passed to executable
-    - "--skip-build"               # Skip compilation, run directly
-    - "-g"                         # Run debug build
-  example: |
-    cjpm run --build-args="-s -j16" --run-args="a b c"
+  - "--name <value>"
+  - "--build-args <value>"
+  - "--run-args <value>"
+  - "--skip-build"
+  - "-g (debug)"
+  example: 'cjpm run --build-args="-s -j16" --run-args="a b c"'
 
 test_options:
-  flags:
-    - "--filter <value>"           # Filter test cases by wildcard pattern
-    - "--timeout-each <value>"     # Per-test timeout, format: %d[millis|s|m|h]
-    - "--parallel <value>"         # Parallel strategy: true/false/nCores/<N>
-    - "--random-seed <value>"      # Random seed for test ordering
-    - "--no-color"                 # Disable colored output
-    - "--report-path <value>"      # Test report output path
-    - "--report-format <value>"    # Report format (xml)
-    - "--coverage"                 # Enable coverage statistics
-  examples: |
-    cjpm test                              # run all tests
-    cjpm test src/utils                    # test specific package
-    cjpm test --filter "testAdd"           # filter by name
-    cjpm test --timeout-each 30s           # 30s per-test timeout
-    cjpm test --parallel 4                 # 4-thread parallel
+  - "--filter <value>"
+  - "--timeout-each <value>"
+  - "--parallel <value>"
+  - "--random-seed <value>"
+  - "--no-color"
+  - "--report-path / --report-format"
+  - "--coverage"
 
 dependencies:
-  source_dependency: |
+  source: |
     [dependencies]
-      # local path dependency
       core = { path = "./libs/core" }
-      # git dependency (branch)
       logger = { git = "https://example.com/logger.git", branch = "main" }
-      # git dependency (tag)
       utils = { git = "https://example.com/utils.git", tag = "v1.0.0" }
-
-  test_dependency: |
+  test: |
     [test-dependencies]
       mock_lib = { path = "./test_libs/mock" }
-
-  dependency_replace: |
+  replace: |
     [replace]
       logger = { path = "./local_logger" }
 
 profile_config:
-  build_profile: |
+  build: |
     [profile.build]
       compile-option = "-O2"
-      lto = "full"                           # "thin" or "full" (Linux only)
-  test_profile: |
+      lto = "full"
+  test: |
     [profile.test]
       compile-option = "-g"
-      mock = "on"                            # "on" (default) / "off" / "runtime-error"
+      mock = "on"
   test_env: |
     [profile.test.env]
       MY_ENV = { value = "abc" }
       PATH = { value = "/usr/local/bin", splice-type = "prepend" }
-  env_splice_types:
-    - absent: "Only set if variable does not exist (default)"
-    - replace: "Replace existing value"
-    - prepend: "Insert before existing value"
-    - append: "Append after existing value"
+  env_splice_types: [absent, replace, prepend, append]
 
 ffi_config: |
   [ffi.c]
@@ -155,20 +109,13 @@ cross_compilation: |
   [target.x86_64-unknown-linux-gnu]
     compile-option = "-O2"
     link-option = "-L/usr/lib"
+  # cjpm build --target x86_64-w64-mingw32
 
-  # Command: cjpm build --target x86_64-w64-mingw32
-
-build_script:
-  description: "Place build.cj in project root for pre/post-build custom logic"
-  skip: "--skip-script to bypass execution"
+build_script: "Place build.cj in project root; --skip-script to bypass"
 
 key_rules:
-  - "cjpm.toml: [package] and [workspace] are mutually exclusive"
-  - "Test files: suffix _test.cj, annotated with @Test"
-  - "Test imports: std.unittest.* and std.unittest.testmacro.* (auto-imported in test mode)"
-  - "Default output: executable named main in target/release/bin/"
-  - "Incremental build: use -i flag"
-  - "Lock file: cjpm.lock auto-generated, cjpm update to refresh"
-  - "Workspace member build: -m <member>"
-  - "Coverage: --coverage with cjcov for reports"
-  - "Priority: command-line options > config file options"
+  - "Test files: _test.cj suffix, @Test annotation"
+  - "Test imports: std.unittest.* auto-imported in test mode"
+  - "Default output: main in target/release/bin/"
+  - "Lock file: cjpm.lock auto-generated; cjpm update to refresh"
+  - "Priority: command-line > config file"
