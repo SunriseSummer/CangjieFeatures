@@ -1,32 +1,16 @@
-# Cangjie Structs
-# Value types, initialization, mutability
-
-struct_definition:
+definition:
+  note: "Value type — assignment copies; no reference sharing"
   syntax: |
     struct Name {
-        // member variables
-        // properties
-        // constructors
-        // member functions
-        // operator functions
+        // member variables, properties, constructors, functions, operators
     }
-
-  value_type: |
-    Structs are value types:
-    - Assignment copies the entire struct
-    - Passed by value to functions
-    - No reference sharing (unlike class)
-
   example: |
     struct Point {
         let x: Float64
         let y: Float64
-
         public init(x: Float64, y: Float64) {
-            this.x = x
-            this.y = y
+            this.x = x; this.y = y
         }
-
         public func distanceTo(other: Point): Float64 {
             let dx = x - other.x
             let dy = y - other.y
@@ -35,84 +19,54 @@ struct_definition:
     }
 
 constructors:
-  regular:
-    syntax: |
-      init(params) {
-          // must initialize all fields without defaults
-      }
-  primary:
-    syntax: |
-      struct Pair {
-          public Pair(let first: Int64, let second: Int64) {}
-      }
-    note: "Primary constructor name matches struct name, defined INSIDE body"
+  regular: "init(params) { /* must initialize all fields without defaults */ }"
+  primary: |
+    struct Pair {
+        public Pair(let first: Int64, let second: Int64) {}
+    }
   auto_generated: |
-    If all fields have default values and no explicit constructor,
-    a parameterless init() is auto-generated.
-    Note: No parameterized constructor is auto-generated.
-
-  static_initializer:
-    syntax: |
-      static init() {
-          // initialize static members
-      }
+    If all fields have defaults and no explicit constructor,
+    parameterless init() is auto-generated. No parameterized constructor is generated.
+  static_initializer: "static init() { /* initialize static members */ }"
 
 mutability:
-  struct_binding:
-    immutable: "let p = Point(1.0, 2.0)"  # cannot modify any field
-    mutable: "var p = Point(1.0, 2.0)"  # can modify var fields
-    note: "Only var fields of a var-bound struct can be modified"
-
+  binding:
+    immutable: "let p = Point(1.0, 2.0)  // cannot modify any field"
+    mutable: "var p = Point(1.0, 2.0)    // can modify var fields"
   mut_functions:
     syntax: |
       mut func moveTo(newX: Float64, newY: Float64): Unit {
-          // can modify this struct's var fields
+          // can modify var fields
       }
     rules:
-      - "Declared with mut keyword before func"
-      - "Can only be called on var-bound struct instances"
-      - "Can modify var fields of the struct"
+      - "mut keyword before func"
+      - "Only callable on var-bound instances"
       - "Cannot be static"
-      - "this cannot be captured by Lambda or nested functions"
-      - "this cannot be used as an expression (e.g., cannot be returned)"
+      - "this cannot be captured by Lambda or used as expression"
       - "Instance member variables cannot be captured by Lambda inside mut func"
-      - "Non-mut instance functions cannot call mut functions"
     example: |
       struct Counter {
           var count: Int64 = 0
-
-          public mut func increment(): Unit {
-              count += 1
-          }
+          public mut func increment(): Unit { count += 1 }
       }
-
       var c = Counter()
       c.increment()
       println(c.count)  // 1
-
-  value_semantics_demo: |
-    struct MutPoint {
-        var x: Float64 = 0.0
-        var y: Float64 = 0.0
-    }
+  value_semantics: |
     var a = MutPoint()
     a.x = 1.0
-    a.y = 2.0
-    var b = a          // b is a copy of a
-    b.x = 10.0        // only b is modified
-    println(a.x)      // still 1.0
+    var b = a       // b is a copy
+    b.x = 10.0     // only b is modified
+    println(a.x)   // still 1.0
 
 restrictions:
-  - "No inheritance (structs cannot extend or be extended by other structs/classes)"
-  - "Can implement interfaces"
-  - "No recursive struct definitions (struct field cannot be same struct type)"
-  - "Cannot define struct for built-in primitive types"
+  - "No inheritance; can implement interfaces"
+  - "No recursive struct fields (cannot contain same struct type)"
   - "No destructor (~init)"
   - "No open/abstract/sealed/override/redef modifiers"
 
 properties:
-  immutable: |
-    prop name: Type { get() { expression } }
+  immutable: "prop name: Type { get() { expression } }"
   mutable: |
     mut prop name: Type {
         get() { expression }
@@ -121,9 +75,7 @@ properties:
   note: "mut prop setters behave like mut functions — only callable on var-bound instances"
 
 interface_implementation:
-  rules:
-    - "Struct must exactly match mut modifier: mut function ↔ mut function, non-mut ↔ non-mut"
-    - "Class implementations ignore mut modifier (class instance methods can always modify state)"
-  boxing_behavior: |
-    Assigning a struct instance to an interface-typed variable copies the struct.
-    Calling a mut function via the interface variable modifies the copy, NOT the original.
+  mut_matching: "Struct must exactly match mut modifier; class implementations ignore mut"
+  boxing: |
+    Assigning struct to interface-typed variable copies the struct.
+    Calling mut function via interface modifies the copy, NOT the original.

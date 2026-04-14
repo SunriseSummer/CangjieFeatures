@@ -1,123 +1,58 @@
-# Cangjie Interfaces
-# Definition, implementation, default methods, sealed interfaces
-
-interface_definition:
+definition:
   syntax: |
     interface InterfaceName {
-        // abstract function declarations
-        // default implementations
-        // abstract properties
-        // operator function declarations
-        // static members
+        func abstractMethod(): Type
+        func defaultMethod(): Type { /* default impl */ }
+        prop abstractProp: Type
+        static func staticMethod(): Type
+        operator func <(rhs: T): Bool
     }
-
   example: |
     interface Printable {
         func display(): String
     }
-
     interface Serializable {
         func serialize(): Array<Byte>
-        func deserialize(data: Array<Byte>): Unit {
-            // default implementation
-        }
+        func deserialize(data: Array<Byte>): Unit { /* default */ }
     }
 
 members:
-  abstract_functions: |
-    interface Drawable {
-        func draw(): Unit             // no body = abstract
-    }
-  default_implementations: |
-    interface Loggable {
-        func log(): Unit {
-            println(this.toString())   // default implementation
-        }
-    }
-  abstract_properties: |
-    interface Named {
-        prop name: String              // abstract getter
-        mut prop nickname: String      // abstract getter + setter
-    }
-  static_members: |
-    interface Factory<T> {
-        static func create(): T       // static abstract
-        static func version(): String { "1.0" }  // static default
-    }
-  operator_functions: |
-    interface Comparable<T> {
-        operator func <(rhs: T): Bool
-        operator func ==(rhs: T): Bool
-    }
+  abstract: "func draw(): Unit                      // no body = abstract"
+  default: "func log(): Unit { println(this.toString()) }"
+  abstract_property: "prop name: String / mut prop nickname: String"
+  static: "static func create(): T / static func version(): String { \"1.0\" }"
+  operator: "operator func <(rhs: T): Bool"
 
 implementation:
-  by_class:
-    syntax: |
-      class MyClass <: InterfaceName {
-          public func requiredMethod(): Type { ... }
-      }
-    multiple: |
-      class MyClass <: Interface1 & Interface2 & Interface3 {
-          // implement all required members
-      }
-  by_struct:
-    syntax: |
-      struct MyStruct <: InterfaceName {
-          public func requiredMethod(): Type { ... }
-      }
-    mut_functions: |
-      interface Resettable {
-          mut func reset(): Unit
-      }
-      struct Counter <: Resettable {
-          var n: Int64 = 0
-          public mut func reset(): Unit { n = 0 }
-      }
-  by_extension:
-    syntax: |
-      extend ExistingType <: InterfaceName {
-          public func requiredMethod(): Type { ... }
-      }
+  by_class: |
+    class MyClass <: Interface1 & Interface2 {
+        public func requiredMethod(): Type { ... }
+    }
+  by_struct: |
+    struct Counter <: Resettable {
+        var n: Int64 = 0
+        public mut func reset(): Unit { n = 0 }
+    }
+  by_extension: |
+    extend ExistingType <: InterfaceName {
+        public func requiredMethod(): Type { ... }
+    }
 
-interface_inheritance:
-  single: |
-    interface AdvancedDrawable <: Drawable {
-        func drawWithEffects(): Unit
-    }
-  multiple: |
-    interface ReadWriteStream <: InputStream & OutputStream {
-        // inherits all members from both
-    }
-  diamond: |
-    If two parent interfaces provide the same default implementation,
-    the implementing class/struct must override it to resolve ambiguity.
-    The compiler will report an error if conflicting defaults are not resolved.
+inheritance:
+  single: "interface AdvancedDrawable <: Drawable { ... }"
+  multiple: "interface ReadWriteStream <: InputStream & OutputStream { ... }"
+  diamond: "Conflicting defaults must be overridden by implementer"
 
 mut_function_rules:
-  description: "How mut functions in interfaces interact with class and struct implementations"
-  class_behavior: |
-    Class implementations IGNORE the mut modifier on interface functions.
-    Class instance methods can always modify instance state regardless of mut.
-  struct_behavior: |
-    Struct implementations MUST exactly match the mut modifier:
-    - mut function in interface → must be mut function in struct
-    - non-mut function in interface → must be non-mut function in struct
+  class: "Ignores mut modifier — class methods can always modify state"
+  struct: "Must exactly match mut modifier"
 
 sealed_interface:
-  syntax: |
-    sealed interface Shape {
-        func area(): Float64
-    }
-  rule: "Only types in the same package can implement a sealed interface"
-  use_case: "Controlled set of implementations for exhaustive matching"
+  syntax: "sealed interface Shape { func area(): Float64 }"
+  rule: "Only types in same package can implement"
 
-any_interface:
-  description: |
-    Any is the built-in top interface.
-    All non-interface types implicitly implement Any.
-    Can be used as a universal type parameter bound.
+any_interface: "Built-in top interface; all non-interface types implicitly implement Any"
 
 access_rules:
-  interface_members: "Default to public; must be implemented as public"
-  interface_itself: "Can be public, internal, etc."
-  note: "All implemented members must be at least as visible as the interface"
+  members: "Default to public; must be implemented as public"
+  constraint: "All implemented members must be at least as visible as the interface"

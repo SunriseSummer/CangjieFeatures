@@ -1,182 +1,92 @@
-# Cangjie Classes
-# Definition, inheritance, constructors, properties, abstract classes
-
-class_definition:
+definition:
+  note: "Reference type; assignment shares identity"
   syntax: |
     class ClassName {
-        // member variables
-        // properties
-        // constructors
-        // member functions
-        // operator functions
+        // member variables, properties, constructors, functions, operators
     }
-
-  reference_type: "Classes are reference types; assignment shares identity"
-
   example: |
     class Person {
         private let name: String
         private var age: Int64
-
         public init(name: String, age: Int64) {
             this.name = name
             this.age = age
         }
-
         public func greet(): String {
             "Hello, I'm ${name}, age ${age}"
         }
     }
 
 member_variables:
-  instance:
-    syntax: "var/let name: Type = initialValue"
-    access_default: internal
-  static:
-    syntax: "static var/let name: Type = initialValue"
-    access: "Via ClassName.name"
-    note: "Shared across all instances"
-  static_initializer:
-    syntax: |
-      static init() {
-          // initialize static members
-      }
-    rules:
-      - "Called once before first access to any static member"
-      - "Must initialize all uninitialized static member variables"
-      - "No access modifier allowed on static init"
-      - "At most one per class"
+  instance: "var/let name: Type = initialValue"
+  static: "static var/let name: Type = initialValue"
+  static_initializer: |
+    static init() { /* called once before first access; at most one per class */ }
 
 constructors:
   regular:
-    syntax: |
-      init(params) {
-          // must initialize all uninitialized member variables
-      }
-    execution_order: |
-      1. Member default-value initializers (outside constructor body)
-      2. Implicit or explicit super() call
-      3. Constructor body
-    delegation: |
-      init(name: String) {
-          this(name, 0)  // delegates to another constructor
-      }
-    parent_call: |
-      init(name: String) {
-          super(name)  // must call parent constructor
-      }
-  primary:
-    syntax: |
-      class Point {
-          public Point(let x: Float64, let y: Float64) {}
-      }
-    note: |
-      Primary constructor name matches class name.
-      Defined INSIDE class body with let/var parameters.
-      Combines parameter declaration and field initialization.
-  auto_generated: |
-    If all member variables have default values and no explicit constructor,
-    a parameterless init() is auto-generated.
-  overloading: "Multiple init() constructors with different parameter lists"
-
+    syntax: "init(params) { /* must initialize all uninitialized fields */ }"
+    execution_order: "field defaults → super() → constructor body"
+    delegation: "this(otherParams)"
+    parent_call: "super(args)"
+  primary: |
+    class Point {
+        public Point(let x: Float64, let y: Float64) {}
+    }
+    // Name matches class; let/var params become fields
+  auto_generated: "If all fields have defaults and no explicit init, parameterless init() is generated"
+  overloading: "Multiple init() with different parameter lists"
   destructor:
-    syntax: |
-      ~init() {
-          // cleanup code
-      }
+    syntax: "~init() { /* cleanup */ }"
     rules:
-      - "Called during garbage collection (non-deterministic timing)"
-      - "Only allowed in non-open classes (class with ~init cannot be marked open)"
-      - "Cannot be manually called"
-      - "At most one per class"
+      - "Called during GC (non-deterministic timing)"
+      - "Not allowed in open classes"
+      - "Cannot be called manually; at most one per class"
 
 inheritance:
-  single_inheritance:
-    syntax: |
-      open class Animal {
-          public open func speak(): String { "..." }
-      }
-      class Dog <: Animal {
-          public override func speak(): String { "Woof!" }
-      }
-    requires: "Parent class must be marked open"
-
-  sealed_inheritance:
-    syntax: |
-      sealed abstract class Shape {
-          public func area(): Float64
-      }
-    rule: "Only classes in same package can inherit from sealed class"
-
+  single: |
+    open class Animal {
+        public open func speak(): String { "..." }
+    }
+    class Dog <: Animal {
+        public override func speak(): String { "Woof!" }
+    }
+  sealed: |
+    sealed abstract class Shape {
+        public func area(): Float64
+    }
+    // Only classes in same package can inherit
   override_rules:
-    instance_members: |
-      override func methodName(): Type { ... }
-      - Parent method must be open
-      - override keyword is optional but recommended
-    static_members: |
-      redef static func methodName(): Type { ... }
-      - redef keyword is optional but recommended
-    covariant_return: "Override can return a subtype of parent's return type"
-
-  abstract_classes:
-    syntax: |
-      abstract class Shape {
-          public func area(): Float64   // no body = abstract
-      }
-    rules:
-      - "Cannot be instantiated directly"
-      - "Subclass must implement all abstract members"
-      - "Can have concrete members too"
-
-  super_calls:
-    syntax: "super.methodName(args)"
-    constructor: "super(args)"  # in init()
-
-  this_type:
-    description: "This refers to the actual runtime type of the object"
-    example: |
-      open class Builder {
-          public open func setName(n: String): This { this }
-      }
-      class SubBuilder <: Builder {
-          public override func setName(n: String): This { this }
-      }
-      // SubBuilder().setName("x") returns SubBuilder, not Builder
+    instance: "override func — parent method must be open"
+    static: "redef static func"
+    covariant_return: "Override can return a subtype"
+  abstract: |
+    abstract class Shape {
+        public func area(): Float64  // no body = abstract
+    }
+    // Cannot instantiate; subclass must implement all abstract members
+  super: "super.methodName(args) / super(args)"
+  This_type: |
+    open class Builder {
+        public open func setName(n: String): This { this }
+    }
+    // SubBuilder().setName("x") returns SubBuilder, not Builder
 
 properties:
-  immutable_property:
-    syntax: |
-      prop name: Type {
-          get() { expression }
-      }
-    usage: "obj.name  // read-only"
-
-  mutable_property:
-    syntax: |
-      mut prop name: Type {
-          get() { expression }
-          set(value) { /* assign */ }
-      }
-    usage: "obj.name = newValue"
-
-  abstract_property: |
-    abstract prop name: Type  // in abstract class or interface
-
-  static_property: |
-    static prop count: Int64 {
-        get() { _count }
+  immutable: |
+    prop name: Type { get() { expression } }
+  mutable: |
+    mut prop name: Type {
+        get() { expression }
+        set(value) { /* assign */ }
     }
-
+  abstract: "abstract prop name: Type"
+  static: "static prop name: Type { get() { ... } }"
   example: |
     class Circle {
         var radius: Float64
-
         public init(r: Float64) { radius = r }
-
-        public prop area: Float64 {
-            get() { 3.14159 * radius * radius }
-        }
-
+        public prop area: Float64 { get() { 3.14159 * radius * radius } }
         public mut prop r: Float64 {
             get() { radius }
             set(v) { radius = v }
@@ -184,15 +94,9 @@ properties:
     }
 
 access_modifiers:
-  levels:
-    - modifier: private
-      scope: "Same source file only"
-    - modifier: internal
-      scope: "Same package and subpackages (default)"
-    - modifier: protected
-      scope: "Same module + subclass bodies"
-    - modifier: public
-      scope: "Everywhere"
+  private: "same file only"
+  internal: "same package + subpackages (default)"
+  protected: "same module + subclass bodies"
+  public: "everywhere"
   declaration_order: "public open override func ..."
-  class_default: "internal for members, internal for class itself"
-  note: "Member visibility cannot exceed containing type visibility"
+  constraint: "Member visibility cannot exceed containing type visibility"
