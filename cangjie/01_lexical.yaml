@@ -4,7 +4,7 @@
 keywords:
   declaration:
     - let       # immutable binding
-    - var       # mutable binding
+    - var       # mutable binding; also used for mutable struct fields
     - const     # compile-time constant
     - func
     - class
@@ -96,80 +96,108 @@ identifiers:
   raw_identifier: "`keyword`"   # use keyword as identifier by wrapping in backticks
 
 operators:
-  by_precedence:  # level 0 (highest) to 18 (lowest)
-    - level: 0
+  by_precedence:  # highest to lowest
+    - level: 1
       ops: ["@"]
       assoc: right
-      note: "Macro/annotation call"
-    - level: 1
-      ops: [".", "[]", "()", "?.", "?[", "?(", "?{"]
-      assoc: left
-      note: "Member access, subscript, call, optional chaining"
+      note: "Macro / annotation call"
     - level: 2
-      ops: ["++", "--", "?"]
-      assoc: right
-      note: "Postfix increment/decrement, postfix ? (Option unwrap)"
+      ops: ["."]
+      assoc: left
+      note: "Member access"
+    - level: 2
+      ops: ["?.", "?[", "?(", "?{"]
+      assoc: left
+      note: "Optional chaining"
     - level: 3
-      ops: ["!", "-", "~"]
-      assoc: right
-      note: "Prefix unary: logical NOT, negation, bitwise NOT"
+      ops: ["()"]
+      assoc: left
+      note: "Function call"
+    - level: 3
+      ops: ["[]"]
+      assoc: left
+      note: "Subscript (index)"
     - level: 4
+      ops: ["++", "--"]
+      assoc: right
+      note: "Postfix increment / decrement"
+    - level: 5
+      ops: ["!"]
+      assoc: right
+      note: "Logical NOT (prefix)"
+    - level: 5
+      ops: ["-"]
+      assoc: right
+      note: "Unary negation (prefix)"
+    - level: 5
+      ops: ["~"]
+      assoc: right
+      note: "Bitwise NOT (prefix)"
+    - level: 6
       ops: ["**"]
       assoc: right
       note: "Exponentiation"
-    - level: 5
+    - level: 7
       ops: ["*", "/", "%"]
       assoc: left
       note: "Multiplicative"
-    - level: 6
+    - level: 8
       ops: ["+", "-"]
       assoc: left
       note: "Additive"
-    - level: 7
+    - level: 9
       ops: ["<<", ">>"]
       assoc: left
       note: "Bitwise shift"
-    - level: 8
-      ops: ["..", "..="]
-      assoc: none
-      note: "Range: .. half-open [start,end), ..= inclusive [start,end]"
-    - level: 9
-      ops: ["<", "<=", ">", ">=", "is", "as"]
-      assoc: none
-      note: "Comparison, type check (is), type cast (as)"
     - level: 10
+      ops: [".."]
+      assoc: none
+      note: "Range (inclusive)"
+    - level: 10
+      ops: ["..="]
+      assoc: none
+      note: "Range (fully inclusive)"
+    - level: 11
+      ops: ["<", "<=", ">", ">="]
+      assoc: none
+      note: "Comparison"
+    - level: 12
       ops: ["==", "!="]
       assoc: none
       note: "Equality"
-    - level: 11
+    - level: 13
       ops: ["&"]
       assoc: left
       note: "Bitwise AND"
-    - level: 12
+    - level: 14
       ops: ["^"]
       assoc: left
       note: "Bitwise XOR"
-    - level: 13
+    - level: 15
       ops: ["|"]
       assoc: left
       note: "Bitwise OR"
-    - level: 14
+    - level: 16
       ops: ["&&"]
       assoc: left
       note: "Logical AND (short-circuit)"
-    - level: 15
+    - level: 17
       ops: ["||"]
       assoc: left
       note: "Logical OR (short-circuit)"
-    - level: 16
+    - level: 18
       ops: ["??"]
       assoc: right
       note: "None coalescing (for Option<T>)"
-    - level: 17
-      ops: ["|>", "~>"]
+    - level: 19
+      ops: ["|>"]
       assoc: left
-      note: "Pipeline (x |> f ≡ f(x)), composition (f ~> g ≡ { x => g(f(x)) })"
-    - level: 18
+      note: "Pipeline: x |> f  ≡  f(x)"
+    - level: 20
+      ops: ["~>"]
+      assoc: left
+      note: "Composition: f ~> g  ≡  { x => g(f(x)) }"
+    - level: 21
       ops: ["=", "+=", "-=", "*=", "/=", "%=", "**=", "<<=", ">>=", "&=", "|=", "^=", "&&=", "||="]
       assoc: right
       note: "Assignment"

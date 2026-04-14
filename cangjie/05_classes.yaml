@@ -124,7 +124,6 @@ inheritance:
       }
     rules:
       - "Cannot be instantiated directly"
-      - "Abstract classes are implicitly open (no need for open keyword)"
       - "Subclass must implement all abstract members"
       - "Can have concrete members too"
 
@@ -159,7 +158,7 @@ properties:
       }
     usage: "obj.name = newValue"
 
-  abstract_property: "abstract prop name: Type  // in abstract class or interface"
+  abstract_property: "abstract prop name: Type"  # in abstract class or interface
 
   static_property: |
     static prop count: Int64 {
