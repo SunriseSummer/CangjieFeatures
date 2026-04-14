@@ -1,43 +1,33 @@
-# Cangjie Variables, Expressions, and Control Flow
-
 variables:
-  immutable:
-    keyword: let
+  let:
     syntax: "let name: Type = value"
-    inference: "let name = value"  # type inferred
+    inference: "let name = value"
     note: "Cannot be reassigned after initialization"
-  mutable:
-    keyword: var
+  var:
     syntax: "var name: Type = value"
-    note: "Can be reassigned; struct fields must be var to be mutable"
-  compile_time_constant:
-    keyword: const
+    note: "Can be reassigned; struct fields must be var for mutability"
+  const:
     syntax: "const NAME: Type = constexpr"
     allowed_types: "Int, UInt, Float, Bool, Rune, String"
-    note: "Evaluated at compile time; must use const expressions"
-
+    note: "Evaluated at compile time"
   destructuring:
     tuple: "let (x, y) = (1, 2)"
-    wildcard: "let (_, y) = (1, 2)"  # ignore first element
-
-  scope: |
-    Block-scoped with lexical scoping:
-    - Inner block can shadow outer variable
-    - Variable is accessible from point of declaration to end of block
+    wildcard: "let (_, y) = (1, 2)"
+  scope: "Block-scoped with lexical scoping; inner block can shadow outer variable"
 
 expressions:
-  everything_is_expression: |
-    In Cangjie, if/match/try are expressions that return values:
+  values: |
+    if/match/try are expressions that return values:
       let x = if (cond) { 1 } else { 2 }
       let y = match (v) { case 1 => "one"; case _ => "other" }
       let z = try { riskyOp() } catch (_: Exception) { fallback }
 
   code_block_rule: |
-    Standalone code blocks { exprs } are NOT valid expressions in Cangjie.
-    Code blocks can only appear attached to if/while/for-in/match/func/lambda.
-    Example of INVALID code: let r = { let x = 2; x ** 3 }  // ERROR
+    Standalone { exprs } are NOT valid expressions.
+    Blocks only attach to if/while/for-in/match/func/lambda.
+    INVALID: let r = { let x = 2; x ** 3 }
 
-  if_expr:
+  if:
     syntax: |
       if (condition) {
           thenBranch
@@ -51,26 +41,16 @@ expressions:
           // v is bound here
       }
 
-  while_loop:
-    basic: |
-      while (condition) {
-          body
-      }
-    do_while: |
-      do {
-          body
-      } while (condition)
+  while:
+    basic: "while (condition) { body }"
+    do_while: "do { body } while (condition)"
     while_let: |
       while (let Some(v) <- iter.next()) {
           // v is bound each iteration
       }
-    type: "Unit"
 
-  for_in_loop:
-    syntax: |
-      for (item in iterable) {
-          body
-      }
+  for_in:
+    basic: "for (item in iterable) { body }"
     with_where: |
       for (x in 0..10 where x % 2 == 0) {
           println(x)  // 0, 2, 4, 6, 8
@@ -79,12 +59,11 @@ expressions:
       for ((key, value) in pairs) {
           println("${key}: ${value}")
       }
-    range_iteration: |
-      for (i in 0..5) { }       // 0,1,2,3,4
-      for (i in 0..=5) { }      // 0,1,2,3,4,5
-    type: "Unit"
+    range: |
+      for (i in 0..5) { }    // 0,1,2,3,4
+      for (i in 0..=5) { }   // 0,1,2,3,4,5
 
-  match_case:
+  match:
     with_value: |
       match (expr) {
           case pattern1 => result1
@@ -94,33 +73,26 @@ expressions:
     without_value: |
       match {
           case boolExpr1 => result1
-          case boolExpr2 => result2
           case _ => default
       }
-    combined_patterns: |
-      match (x) {
-          case 1 | 2 | 3 => "small"
-          case _ => "other"
-      }
+    combined: "case 1 | 2 | 3 => \"small\""
     exhaustiveness: "Must cover all cases; use _ for catch-all"
 
   loop_control:
     break: "exits innermost loop"
     continue: "skips to next iteration"
-    type: "Nothing"
+    type: Nothing
 
   range:
     half_open: "1..4"   # 1, 2, 3
     closed: "1..=4"     # 1, 2, 3, 4
     step: "1..6:2"      # 1, 3, 5
-    type: "Range<T>"
-    countable: "Range works with any type implementing Countable<T>"
+    type: "Range<T> where T <: Countable<T>"
 
   assignment:
     simple: "x = value"
     compound: "x += 1; x -= 1; x *= 2; x /= 2; x %= 3"
-    type: "Unit" 
+    type: Unit
 
   string_interpolation:
     syntax: '"text ${expression} more text"'
-    arbitrary_expr: '"result is ${a + b * c}"'

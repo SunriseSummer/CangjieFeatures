@@ -1,112 +1,66 @@
-# Cangjie Package System
-# Packages, modules, imports, visibility
-
-package_structure:
-  package:
-    - "Minimum compilation unit with its own namespace"
-    - "Declared in source files, maps to directory structure"
-    - "At most one main() entry point per package"
+structure:
+  package: "Minimum compilation unit with own namespace; at most one main()"
   module: "Collection of packages; minimum distribution unit"
-  source_layout: |
+  layout: |
     project_root/
-    ├── cjpm.toml          # project configuration
+    ├── cjpm.toml
     └── src/
-        ├── main.cj        # root package, the default package name is "default"
+        ├── main.cj          # root package "default"
         ├── utils/
-        │   └── helper.cj  # package default.utils
+        │   └── helper.cj    # package default.utils
         └── models/
-            └── user.cj    # package default.models
+            └── user.cj      # package default.models
 
-package_declaration:
+declaration:
   syntax: |
-    package packageName           // simple/root package
-    package parent.child          // nested/sub package
+    package packageName        // simple/root
+    package parent.child       // nested
   rules:
-    - "Must be first non-comment statement in file"
-    - "Must match relative path from src/ directory"
-    - "Folder name must match package name"
-    - "Files without package declaration belong to 'default' package"
-  examples:
-    - "package default // src/main.cj"
-    - "package default.utils // src/utils/helper.cj"
+    - "Must be first non-comment statement"
+    - "Must match relative path from src/"
+    - "Files without declaration belong to 'default' package"
 
 imports:
-  basic:
-    specific: "import pkg.ItemName"
-    wildcard: "import pkg.*"
-    multiple: |
-      import { pkg1.Foo, pkg2.Bar }
-      import pkg.{ Foo, Bar, Baz }
-  renaming:
-    package: "import longPkgName as short"
-    item: "import pkg.VeryLongName as Short"
-  re_export:
-    syntax: "public import pkg.*"
-    note: "Makes imported items visible to importers of current package"
+  basic: "import pkg.ItemName; import pkg.*"
+  grouped: "import { pkg1.Foo, pkg2.Bar }; import pkg.{ Foo, Bar }"
+  renaming: "import longPkgName as short; import pkg.VeryLongName as Short"
+  re_export: "public import pkg.*"
   rules:
-    - "Must appear after package declaration, before other declarations"
-    - "Cannot import from current package"
-    - "No circular dependencies between packages"
+    - "After package declaration, before other declarations"
+    - "No circular dependencies"
     - "Imported names have lower precedence than local declarations"
-  core_package: |
-    Core types are implicitly imported (no import needed):
-    String, Array, Range, Int64, Bool, Option, println, etc.
+  core: "String, Array, Range, Int64, Bool, Option, println, etc. — implicitly imported"
 
 visibility:
-  access_modifiers:
-    private:
-      scope: "Same source file only"
-      use: "Implementation details"
-    internal:
-      scope: "Same package and its subpackages"
-      use: "Default for most declarations"
-      note: "This is the default access level"
-    protected:
-      scope: "Same module + subclass bodies in other modules"
-      use: "Framework extension points"
-    public:
-      scope: "Everywhere"
-      use: "Public API"
-
+  private: "Same source file only"
+  internal: "Same package + subpackages (default)"
+  protected: "Same module + subclass bodies"
+  public: "Everywhere"
   defaults:
     package_declaration: public
     import_declaration: private
-    type_declarations: internal
-    type_members: internal
+    type_and_members: internal
+  constraint: "Declaration visibility cannot exceed visibility of types it references"
 
-  constraint: |
-    A declaration's visibility cannot exceed the visibility of types it uses:
-      internal class Foo {}
-      public func makeFoo(): Foo {}  // ERROR: public func uses internal type
-    Exception: internal types can be used in public function/variable bodies.
-
-main_entry:
-  location: "executable package"
+main:
   signatures:
     - "main(): Int64 { ... }"
     - "main(): Unit { ... }"
     - "main(args: Array<String>): Int64 { ... }"
     - "main(args: Array<String>): Unit { ... }"
-  rules:
-    - "At most one per package"
-    - "No access modifier allowed on main"
-    - "Not imported when package is used as a library"
-    - "Does not require func keyword"
+  rules: "At most one per package; no access modifier; no func keyword"
 
-project_management:
-  tool: cjpm
-  config_file: cjpm.toml
+cjpm:
+  config: cjpm.toml
   commands:
-    init: "cjpm init"             # create new project
-    build: "cjpm build"           # compile project
-    run: "cjpm run"               # build and execute
-    test: "cjpm test"             # run tests
-    clean: "cjpm clean"           # remove build artifacts
+    init: "cjpm init"
+    build: "cjpm build"
+    run: "cjpm run"
+    test: "cjpm test"
+    clean: "cjpm clean"
   config_example: |
     [package]
     name = "myapp"
     cjc-version = "1.0.5"
     output-type = "executable"
-
     [dependencies]
-      # dependency declarations

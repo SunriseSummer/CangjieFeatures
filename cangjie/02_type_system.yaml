@@ -1,94 +1,71 @@
-# Cangjie Type System
-# Type hierarchy, built-in types, subtyping, casting
-
 type_hierarchy:
-  top_type: "Any"      # all non-interface types are subtypes of Any
-  bottom_type: "Nothing"  # subtype of all types; no value can have type Nothing
-  object_root: "Object"   # root of all class types
-  relationships:
-    - "Nothing <: T   (for any T)"
-    - "T <: Any        (for any non-interface T)"
+  top: Any              # all non-interface types are subtypes of Any
+  bottom: Nothing       # subtype of all types; no value can have type Nothing
+  object_root: Object   # root of all class types
+  rules:
+    - "Nothing <: T (for any T)"
+    - "T <: Any (for any non-interface T)"
     - "class <: Object (all classes extend Object)"
-    - "T <: T          (reflexive)"
+    - "T <: T (reflexive)"
 
 built_in_types:
   integers:
     signed: [Int8, Int16, Int32, Int64]
     unsigned: [UInt8, UInt16, UInt32, UInt64]
     default: Int64
-    note: "No implicit widening; explicit conversion required: Int64(myInt8)"
+    note: "No implicit widening — explicit conversion required: Int64(myInt8)"
   floating_point:
     types: [Float16, Float32, Float64]
     default: Float64
     special_values: [Float64.NaN, Float64.infinity, Float64.negInfinity]
-  boolean:
-    type: Bool
-    values: [true, false]
-  character:
-    type: Rune
-    description: "Unicode scalar value (same as UInt32 range)"
+  Bool: [true, false]
+  Rune:
+    desc: "Unicode scalar value (same as UInt32 range)"
     conversion: |
-      let code = UInt32(myRune)    // Rune to UInt32
-      let ch = Rune(65)            // UInt32 to Rune ('A')
-  string:
-    type: String
-    description: "UTF-8 encoded, immutable"
+      let code = UInt32(myRune)   // Rune → UInt32
+      let ch = Rune(65)           // UInt32 → Rune ('A')
+  String:
+    encoding: "UTF-8, immutable"
     interpolation: '"Hello, ${expr}!"'
-    multiline: '"""triple-quoted"""'  # preserves content including indentation
-    indexing: "s[i] returns UInt8 (byte); for (b in s) iterates bytes (UInt8); use s.runes() for Rune iteration"
-  unit:
-    type: Unit
+    multiline: '"""triple-quoted"""'
+    indexing: "s[i] → UInt8 (byte); for (b in s) iterates bytes; s.runes() iterates Rune"
+  Unit:
     value: "()"
-    description: "Type with single value; used as void-like return type"
-  nothing:
-    type: Nothing
-    description: "Bottom type; type of throw expressions and infinite loops"
+    desc: "Single-value type; void-like return type"
+  Nothing: "Bottom type; type of throw expressions and infinite loops"
   tuple:
-    syntax: "(T1, T2, ..., Tn)"  # n >= 2
-    access: "t[0], t[1], ..."    # compile-time constant index
+    syntax: "(T1, T2, ..., Tn)"    # n >= 2
+    access: "t[0], t[1], ..."      # compile-time constant index
     destructuring: "let (a, b) = (1, 2)"
     subtyping: "covariant — (Sub1, Sub2) <: (Super1, Super2)"
-
   array:
-    fixed_size:
+    Array:
       type: "Array<T>"
-      create: "Array<Int64>(5, repeat: 0)"  # size=5, fill with 0
+      create: "Array<Int64>(5, repeat: 0)"
       literal: "[1, 2, 3]"
-      access: "arr[i]"  # zero-based indexing
       note: "Reference type; fixed size after creation"
-    varray:
+    VArray:
       type: "VArray<T, $N>"
-      description: "Fixed-size value-type array; N is compile-time constant"
+      desc: "Fixed-size value-type array; N is compile-time constant"
       create: "VArray<Int64, $3>(repeat: 0)"
-
   range:
-    types:
-      - "Range<T>"  # where T <: Countable<T>
-    constructors:
-      inclusive_start: "start..end"         # [start, end)
-      fully_inclusive: "start..=end"        # [start, end]
-      note: "start must be <= end"
-
+    type: "Range<T> where T <: Countable<T>"
+    half_open: "start..end"      # [start, end)
+    closed: "start..=end"        # [start, end]
   function_types:
     syntax: "(ParamTypes) -> ReturnType"
-    examples:
-      - "(Int64) -> Bool"
-      - "(Int64, String) -> Unit"
-      - "() -> Int64"
+    examples: ["(Int64) -> Bool", "(Int64, String) -> Unit", "() -> Int64"]
     subtyping: |
-      Contravariant in parameters, covariant in return:
-      (Super) -> Sub  <:  (Sub) -> Super
-
-  option:
+      Contravariant in params, covariant in return:
+        (Super) -> Sub  <:  (Sub) -> Super
+  Option:
     type: "Option<T>"
-    sugar: "?T  ≡  Option<T>"
-    constructors: ["Some(value)", "None"]
-    auto_wrapping: "T value is auto-wrapped to Some(T) where ?T expected"
+    sugar: "?T ≡ Option<T>"
+    constructors: [Some(value), None]
+    auto_wrapping: "T auto-wrapped to Some(T) where ?T expected"
     operators:
       coalesce: "opt ?? defaultValue"
-      chain_member: "opt?.property"
-      chain_index: "opt?[i]"
-      chain_call: "opt?(arg)"
+      chain: ["opt?.property", "opt?[i]", "opt?(arg)"]
       unwrap: "opt.getOrThrow()"  # throws NoneValueException if None
 
 type_conversions:
@@ -97,41 +74,26 @@ type_conversions:
       let x: Int64 = Int64(myInt8)
       let y: Float64 = Float64(myInt32)
   rune: |
-    Rune → UInt32 requires passing a Rune variable (not literal):
-      let ch: Rune = 'A'
-      let code = UInt32(ch)   // 65
-      let ch2 = Rune(65)     // 'A'
+    let ch: Rune = 'A'
+    let code = UInt32(ch)    // 65
+    let ch2 = Rune(65)      // 'A'
   type_check:
-    syntax: "expr is Type"
-    result: Bool
-    example: |
-      if (obj is String) {
-          println("It's a string")
-      }
+    syntax: "expr is Type → Bool"
   type_cast:
-    syntax: "expr as Type"
-    result: "Option<Type>"
-    example: |
-      match (obj as String) {
-          case Some(s) => println(s)
-          case None => println("not a string")
-      }
+    syntax: "expr as Type → Option<Type>"
 
 subtyping_rules:
-  class_inheritance: "Sub <: Super  (via class Sub <: Super)"
-  interface_impl: "T <: I  (via class T <: I or extend T <: I)"
+  class: "Sub <: Super via class Sub <: Super"
+  interface: "T <: I via class T <: I or extend T <: I"
   tuple: "covariant in all positions"
   function: "contravariant in params, covariant in return"
-  generic_user_types: |
-    Invariant — Box<Sub> is NOT a subtype of Box<Super>:
-      Only Box<T> <: Box<T> when T is identical
-  transitivity: "A <: B and B <: C implies A <: C"
+  generic: "invariant — Box<Sub> is NOT a subtype of Box<Super>"
+  transitivity: "A <: B and B <: C ⇒ A <: C"
 
 type_aliases:
   syntax: "type Alias = OriginalType"
   generic: "type Pair<T> = (T, T)"
   rules:
-    - "Top-level declarations only"
-    - "No circular references"
-    - "Not a new type — fully interchangeable with original"
+    - "Top-level only; no circular references"
+    - "Fully interchangeable with original, not a new type"
     - "Cannot be used in type-cast expressions"

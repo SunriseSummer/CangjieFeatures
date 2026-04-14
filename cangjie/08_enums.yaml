@@ -1,80 +1,42 @@
-# Cangjie Enums
-# Algebraic data types, enum members, equality
-
-enum_definition:
+definition:
   syntax: |
     enum EnumName {
         | Constructor1
         | Constructor2(Type1, Type2)
     }
-
   rules:
-    - "At least one named constructor is required"
-    - "Constructors separated by |, first | is optional"
-    - "Constructors can be parameterless or parameterized"
+    - "At least one constructor required; separated by |"
     - "Same-name constructors allowed if parameter counts differ"
-    - "Constructor names cannot be Cangjie keywords; use backticks to escape"
-    - "Enums can only be defined at top-level scope"
+    - "Keywords as names must use backticks: `Bool`, `String`"
+    - "Top-level scope only"
 
-  simple_enum: |
-    enum Color {
-        | Red | Green | Blue
-    }
-
-  parameterized_enum: |
-    enum Shape {
-        | Circle(Float64)
-        | Rectangle(Float64, Float64)
-        | Point
-    }
-
-  same_name_constructors: |
-    enum Color {
-        | Red | Green | Blue
-        | Red(UInt8) | Green(UInt8) | Blue(UInt8)
-    }
-
-  recursive_enum: |
-    enum Expr {
-        | Num(Int64)
-        | Add(Expr, Expr)
-        | Neg(Expr)
-    }
-
-  non_exhaustive: |
-    enum Token {
-        | Number | Plus | Minus | ...
-    }
-    // match on non-exhaustive enum must include catch-all _ or binding pattern
-
-  constructor_naming: |
-    Constructor names cannot be Cangjie keywords (Bool, String, Int64, etc.).
-    Use backticks to escape: `Bool`, `String`.
-    Example:
-      enum Value {
-          | `Bool`(Bool)
-          | Num(Int64)
+  examples:
+    simple: "enum Color { | Red | Green | Blue }"
+    parameterized: |
+      enum Shape {
+          | Circle(Float64)
+          | Rectangle(Float64, Float64)
+          | Point
       }
+    recursive: |
+      enum Expr {
+          | Num(Int64)
+          | Add(Expr, Expr)
+          | Neg(Expr)
+      }
+    non_exhaustive: |
+      enum Token { | Number | Plus | Minus | ... }
+      // match must include catch-all _
 
-enum_usage:
-  construction: |
-    let c = Color.Red              // qualified form
-    let s = Shape.Circle(5.0)      // parameterized constructor
-    let e: Expr = Add(Num(1), Num(2))  // type context allows short form
+usage:
+  qualified: "Color.Red"
+  parameterized: "Shape.Circle(5.0)"
+  short_form: "let e: Expr = Add(Num(1), Num(2))"  # type context allows short form
 
-  name_conflict: |
-    When constructor name conflicts with variables or other names,
-    use qualified form: EnumName.Constructor
-    Example:
-      let Red = 1                   // variable named Red
-      let r = RGBColor.Red          // qualified to access constructor
-
-enum_members:
-  description: "Enums can contain member functions, operator functions, and properties"
+members:
   example: |
     enum Direction {
         | North | South | East | West
-
         public func opposite(): Direction {
             match (this) {
                 case North => South
@@ -83,16 +45,13 @@ enum_members:
                 case West => East
             }
         }
-
         public static func cardinal(): Array<Direction> {
             [North, South, East, West]
         }
     }
-
-  interface_implementation: |
+  interface_impl: |
     enum Color <: ToString {
         Red | Green | Blue
-
         public func toString(): String {
             match (this) {
                 case Red => "Red"
@@ -103,35 +62,20 @@ enum_members:
     }
 
 equality:
-  default: "Enums do NOT support == by default"
+  default: "NOT supported by default"
   derive: |
-    Recommended: use @Derive[Equatable] to auto-generate equality:
-      import std.deriving.*
-      @Derive[Equatable]
-      enum Color {
-          | Red | Green | Blue
-      }
-      // Now Color.Red == Color.Red works
+    import std.deriving.*
+    @Derive[Equatable]
+    enum Color { | Red | Green | Blue }
+    // Color.Red == Color.Red works
   manual: |
-    Alternative: manually implement operator func ==:
-      enum Color {
-          | Red | Green | Blue
-          public operator func ==(rhs: Color): Bool {
-              match ((this, rhs)) {
-                  case (Red, Red) | (Green, Green) | (Blue, Blue) => true
-                  case _ => false
-              }
-          }
-      }
+    public operator func ==(rhs: Color): Bool {
+        match ((this, rhs)) {
+            case (Red, Red) | (Green, Green) | (Blue, Blue) => true
+            case _ => false
+        }
+    }
 
-generic_enum:
-  syntax: |
-    enum Option<T> {
-        | Some(T)
-        | None
-    }
-  example: |
-    enum Result<T, E> {
-        | Ok(T)
-        | Err(E)
-    }
+generic: |
+  enum Option<T> { | Some(T) | None }
+  enum Result<T, E> { | Ok(T) | Err(E) }

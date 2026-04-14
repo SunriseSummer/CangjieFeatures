@@ -1,7 +1,4 @@
-# Cangjie Pattern Matching
-# match expressions, pattern types, if-let, while-let, destructuring
-
-match_expression:
+match_expr:
   with_value:
     syntax: |
       match (expr) {
@@ -10,92 +7,46 @@ match_expression:
           case _ => defaultResult
       }
     rules:
-      - "match is an expression — returns a value"
-      - "=> is followed by exprs (one or more expressions), no {} needed"
-      - "The last expression in the matched case is the match result"
-      - "Matches top-to-bottom, first match wins, no fall-through"
-      - "Must be exhaustive — cover all possible values"
-      - "Use _ as catch-all"
-    example: |
-      let x = 2
-      let result = match (x) {
-          case 1 => "one"
-          case 2 => "two"
-          case _ => "other"
-      }
+      - "Returns a value; last expression in matched case is result"
+      - "Top-to-bottom, first match wins, no fall-through"
+      - "Must be exhaustive; use _ as catch-all"
 
-  without_value:
-    syntax: |
-      match {
-          case boolExpr1 => result1
-          case boolExpr2 => result2
-          case _ => default
-      }
-    note: "Each case accepts a Bool expression (not a pattern); _ means true"
-
-  combined_patterns: |
-    match (x) {
-        case 1 | 2 | 3 => "small"
-        case _ => "other"
+  without_value: |
+    match {
+        case boolExpr1 => result1
+        case _ => default
     }
+    // Each case accepts Bool expression; _ means true
 
-  type_rules: |
-    - With context type: each branch body must be subtype of expected type
-    - Without context type: type is the least common supertype of all branches
-    - Value unused: type is Unit, no common supertype required
+  combined: "case 1 | 2 | 3 => \"small\""
 
-pattern_types:
+  type_rules:
+    - "With context type: each branch body must be subtype of expected type"
+    - "Without context type: type is least common supertype of all branches"
+    - "Value unused: type is Unit"
+
+patterns:
   constant:
     syntax: "case 42 =>"
-    types: "Integer, Float, Bool, Rune, String literals (no interpolation), Unit"
-    refutable: true
-    combined: "case 0 | 10 | 20 => ..."  # multiple constants with |
+    types: "Int, Float, Bool, Rune, String literals (no interpolation), Unit"
+    combined: "case 0 | 10 | 20 => ..."
+  wildcard: "case _ =>  // matches anything, binds nothing"
+  binding: "case x =>  // matches anything, binds to x; cannot combine with |"
+  tuple: |
+    match (("Alice", 24)) {
+        case ("Bob", age) => "Bob is ${age}"
+        case ("Alice", age) => "Alice is ${age}"
+        case (_, _) => "someone"
+    }
+  type: |
+    case s: String =>  // matches if runtime type is subtype, binds to s
+  enum: |
+    case Circle(r) => 3.14159 * r * r
+    case Rectangle(w, h) => w * h
 
-  wildcard:
-    syntax: "case _ =>"
-    description: "Matches anything, binds nothing"
-    refutable: false
-
-  binding:
-    syntax: "case x =>"
-    description: "Matches anything, binds value to immutable variable x"
-    refutable: false
-    restriction: "Cannot be combined with | operator"
-
-  tuple:
-    syntax: "case (p1, p2, ...) =>"
-    example: |
-      match (("Alice", 24)) {
-          case ("Bob", age) => "Bob is ${age}"
-          case ("Alice", age) => "Alice is ${age}"
-          case (_, _) => "someone"
-      }
-    note: "No duplicate binding names within the same pattern"
-
-  type_pattern:
-    syntax: "case x: Type =>"
-    description: "Matches if runtime type is subtype of Type, binds to x"
-    refutable: true
-    example: |
-      match (obj) {
-          case s: String => println("String: ${s}")
-          case n: Int64 => println("Int: ${n}")
-          case _ => println("other")
-      }
-
-  enum_pattern:
-    syntax: "case Constructor(p1, p2) =>"
-    description: "Type prefix can be omitted; matches when constructor and sub-patterns match"
-    example: |
-      match (shape) {
-          case Circle(r) => 3.14159 * r * r
-          case Rectangle(w, h) => w * h
-          case Point => 0.0
-      }
-
-pattern_guards:
+guards:
   syntax: "case pattern where boolExpr =>"
-  note: "Cangjie uses where, not if, for guards"
+  note: "Cangjie uses where (not if) for guards"
   example: |
     match (x) {
         case n where n > 0 => "positive"
@@ -103,75 +54,42 @@ pattern_guards:
         case _ => "zero"
     }
 
-nested_patterns:
-  description: "Tuple and enum patterns can be nested to any depth"
-  example: |
-    match (expr) {
-        case Add(Num(a), Num(b)) => a + b
-        case Neg(Num(n)) => -n
-        case _ => 0
-    }
+nested: |
+  match (expr) {
+      case Add(Num(a), Num(b)) => a + b
+      case Neg(Num(n)) => -n
+      case _ => 0
+  }
 
 if_let:
   syntax: |
     if (let pattern <- expression) {
         // bindings available here
-    } else {
-        // no bindings available
     }
-  note: "Works with any refutable pattern, not just Option"
   multi_condition: |
-    // && combines multiple let patterns or bool expressions
-    if (let Num(x) <- a && let Num(y) <- b) {
-        println("sum = ${x + y}")
-    }
-    // let pattern + bool guard
-    if (let Num(n) <- a && n > 0) {
-        println("positive: ${n}")
-    }
+    if (let Num(x) <- a && let Num(y) <- b) { ... }
+    if (let Num(n) <- a && n > 0) { ... }
   or_condition: |
-    // || connects patterns — no variable bindings allowed, use _ only
-    if (let Num(_) <- a || let Num(_) <- b) {
-        println("at least one is Num")
-    }
-  restrictions:
-    - "Use && (not where) for additional checks in if-let"
-    - "|| patterns cannot have variable bindings"
-    - "Bound variables only available in the if branch, not else"
+    if (let Num(_) <- a || let Num(_) <- b) { ... }
+    // || patterns cannot have variable bindings
+  rules:
+    - "Use && (not where) for additional checks"
+    - "Bound variables only in if branch, not else"
 
-while_let:
-  syntax: |
-    while (let pattern <- expression) {
-        // loop body; exits when pattern fails to match
-    }
-  example: |
-    var s: State = Active(1)
-    while (let Active(n) <- s) {
-        println(n)
-        s = if (n < 3) { Active(n + 1) } else { Done }
-    }
+while_let: |
+  while (let Active(n) <- s) {
+      println(n)
+      s = if (n < 3) { Active(n + 1) } else { Done }
+  }
 
-pattern_in_let:
-  syntax: |
-    let (x, y) = (1, 2)             // tuple destructuring
-    let (_, second) = getTuple()     // discard first
-  note: "Only irrefutable patterns allowed in let bindings"
+pattern_in_let: |
+  let (x, y) = (1, 2)           // tuple destructuring
+  let (_, second) = getTuple()   // discard first
+  // Only irrefutable patterns allowed
 
-pattern_in_for:
-  syntax: |
-    for ((key, value) in pairs) {
-        println("${key} = ${value}")
-    }
+pattern_in_for: |
+  for ((key, value) in pairs) { println("${key} = ${value}") }
 
 refutability:
-  irrefutable: |
-    Always matches — used in let, for-in:
-    - Wildcard: _
-    - Binding: x
-    - Tuple of irrefutable patterns: (x, _)
-    - Single-constructor enum with irrefutable sub-patterns
-  refutable: |
-    May fail to match — used in match/case, if-let, while-let:
-    - Constants: 42, "hello", true
-    - Type patterns: x: String
-    - Multi-constructor enum patterns: Some(x), None
+  irrefutable: "Always matches — wildcard _, binding x, tuple of irrefutable; used in let, for-in"
+  refutable: "May fail — constants, type patterns, multi-constructor enum; used in match, if-let, while-let"
