@@ -1,0 +1,68 @@
+# Cangjie (仓颉) Language Overview
+# Progressive-disclosure YAML: top-level → categories → details
+
+language:
+  name: Cangjie (仓颉)
+  version: "1.0"
+  paradigms:
+    - object-oriented
+    - functional
+    - generic
+    - concurrent
+  typing: static, strong, inferred
+  memory: automatic (garbage collected, reference counting for structs)
+  compilation: ahead-of-time (native)
+  entry_point: "main() function in root package"
+  file_extension: ".cj"
+  comment_syntax:
+    line: "// comment"
+    block: "/* comment */"
+    nested_block: true  # /* /* nested */ */ is valid
+
+  philosophy:
+    - 安全优先 (safety first)
+    - 表达力强 (expressive)
+    - 高性能 (high performance)
+    - 现代并发 (modern concurrency)
+
+  key_features:
+    - Algebraic data types (enum) with pattern matching
+    - First-class functions and closures
+    - "Option<T> type for null safety (?T sugar)"
+    - "M:N lightweight thread model with spawn"
+    - Compile-time macro system with AST manipulation
+    - Type extensions (add methods without modifying original type)
+    - C interoperability (FFI)
+    - Pipeline (|>) and composition (~>) operators
+    - "Trailing lambda syntax: f { => body }"
+    - Properties (prop/mut prop) as computed fields
+
+  program_structure:
+    description: |
+      A Cangjie program consists of packages. Each package contains
+      source files (.cj). A module is a collection of packages with
+      at most one main() entry point.
+    example: |
+      // hello.cj
+      main(): Int64 {
+          println("Hello, Cangjie!")
+          return 0
+      }
+
+  main_signatures:
+    - "main(): Int64"
+    - "main(): Unit"
+    - "main(args: Array<String>): Int64"
+    - "main(args: Array<String>): Unit"
+
+  value_vs_reference_types:
+    value_types:
+      - "All primitive types (Int64, Float64, Bool, Rune, Unit, Nothing)"
+      - "Tuples"
+      - struct
+      - enum
+    reference_types:
+      - class
+      - "Array<T>"
+      - "Function types"
+    note: "Assignment of value types copies data; reference types share identity"
