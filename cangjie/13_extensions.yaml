@@ -6,9 +6,12 @@ direct:
         public operator func +(rhs: TargetType): TargetType { ... }
     }
   example: |
+    import std.collection.*
     extend String {
         public func isPalindrome(): Bool {
-            let chars = Array<Rune>(this)
+            let list = ArrayList<Rune>()
+            for (r in this.runes()) { list.add(r) }
+            let chars = list.toArray()
             var i = 0
             var j = chars.size - 1
             while (i < j) {

@@ -48,11 +48,12 @@ build_flags:
   - "--mock"
 
 run_flags:
-  - "--name <value>"
-  - "--build-args <value>"
-  - "--run-args <value>"
-  - "--skip-build"
-  - "-g"
+  flags:
+    - "--name <value>"
+    - "--build-args <value>"
+    - "--run-args <value>"
+    - "--skip-build"
+    - "-g"
   example: 'cjpm run --build-args="-s -j16" --run-args="a b c"'
 
 test_flags:

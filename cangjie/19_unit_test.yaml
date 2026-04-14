@@ -14,11 +14,12 @@ basics:
     // Class: @Test + parameterless constructor; methods: @TestCase
 
 assertions:
-  - "@Assert(a, b) / @Expect(a, b)"         # equality; Assert fast-fails, Expect continues
-  - "@Assert(cond) / @Expect(cond)"          # boolean
-  - "@AssertThrows[ExType](expr) / @ExpectThrows[ExType](expr)"
-  - "@Fail(msg) / @FailExpect(msg)"          # unconditional
-  - "@PowerAssert(expr)"                     # detailed diagram, fast-fail
+  macros:
+    - "@Assert(a, b) / @Expect(a, b)"         # equality; Assert fast-fails, Expect continues
+    - "@Assert(cond) / @Expect(cond)"          # boolean
+    - "@AssertThrows[ExType](expr) / @ExpectThrows[ExType](expr)"
+    - "@Fail(msg) / @FailExpect(msg)"          # unconditional
+    - "@PowerAssert(expr)"                     # detailed diagram, fast-fail
   equatable: "@Assert(a, b) requires Equatable<B>; use @Derive[Equatable] for custom types"
   float: "@Expect(1.0, 1.001, delta: 0.001)"
 
