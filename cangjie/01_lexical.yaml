@@ -4,7 +4,7 @@
 keywords:
   declaration:
     - let       # immutable binding
-    - var       # mutable binding; also used for mutable struct fields
+    - var       # mutable binding
     - const     # compile-time constant
     - func
     - class
