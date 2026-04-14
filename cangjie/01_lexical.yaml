@@ -211,11 +211,12 @@ operators:
 
 literals:
   Int:
-    - "42"          # decimal
-    - "0xFF"        # hexadecimal
-    - "0o77"        # octal
-    - "0b1010"      # binary
-    - "1_000_000"   # underscores for readability
+    examples:
+      - "42"          # decimal
+      - "0xFF"        # hexadecimal
+      - "0o77"        # octal
+      - "0b1010"      # binary
+      - "1_000_000"   # underscores for readability
     suffixes:
       - i8
       - i16
@@ -226,9 +227,10 @@ literals:
       - u32
       - u64
   Float:
-    - "3.14"        # Float64 (default)
-    - "2.5e10"      # scientific notation
-    - "1.0f32"      # Float32 suffix
+    examples:
+      - "3.14"        # Float64 (default)
+      - "2.5e10"      # scientific notation
+      - "1.0f32"      # Float32 suffix
     suffixes:
       - f32
       - f64       # default
