@@ -93,7 +93,7 @@ identifiers:
     - "Start with letter or underscore"
     - "Followed by letters, digits, or underscores"
     - "Unicode letters are allowed"
-  raw_identifier: "`keyword`  # use keyword as identifier by wrapping in backticks"
+  raw_identifier: "`keyword`"   # use keyword as identifier by wrapping in backticks
 
 operators:
   by_precedence:  # highest to lowest
@@ -217,21 +217,21 @@ literals:
     - "0b1010"      # binary
     - "1_000_000"   # underscores for readability
     suffixes:
-      - "i8"
-      - "i16"
-      - "i32"
-      - "i64"       # default
-      - "u8"
-      - "u16"
-      - "u32"
-      - "u64"
+      - i8
+      - i16
+      - i32
+      - i64       # default
+      - u8
+      - u16
+      - u32
+      - u64
   Float:
     - "3.14"        # Float64 (default)
     - "2.5e10"      # scientific notation
     - "1.0f32"      # Float32 suffix
     suffixes:
-      - "f32"
-      - "f64"       # default
+      - f32
+      - f64       # default
   Bool: ["true", "false"]
   Rune:
     - "'A'"          # character literal
