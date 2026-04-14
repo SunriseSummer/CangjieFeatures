@@ -204,7 +204,7 @@ operators:
     Overloadable via `operator func`:
       Unary: !, - (negate), ~ (bitwise NOT)
       Binary: +, -, *, /, %, **, <<, >>, &, |, ^, ==, !=, <, <=, >, >=
-      Subscript: [] (get and set share same operator func; set uses named `value!` param)
+      Subscript: [] (single operator for both get and set; setter requires named parameter `value!`)
       Call: () (function call operator)
 
 literals:

@@ -131,7 +131,7 @@ synchronization:
       import std.sync.*
 
       // Use a class wrapper for shared mutable state
-      // (local var cannot be captured by spawn lambdas)
+      // (mutable local var cannot be captured by escaping lambdas like spawn)
       class Shared { public var ready = false }
       let data = Shared()
 
@@ -162,8 +162,8 @@ synchronization:
     syntax: |
       let tls = ThreadLocal<Int64>()  // from core package, no import needed
     usage: |
-      tls.set(42)            // set thread-local value (wraps as Some(42))
-      tls.set(None)          // remove thread-local value
+      tls.set(42)            // set thread-local value (auto-wrapped to Some(42))
+      tls.set(None)          // remove thread-local value (set accepts Option<T>)
       tls.get()              // returns Option<T> — Some(v) or None
 
   sync_counter:
