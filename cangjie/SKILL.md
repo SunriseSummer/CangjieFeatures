@@ -20,5 +20,5 @@ description: "提供仓颉编程语言核心特性优质文档，当使用仓颉
 15. [宏](15_macros.yaml) — 宏包，Token/Tokens，quote 表达式，属性宏，AST 节点解析
 16. [C 互操作](16_ffi.yaml) — foreign 函数，类型映射，unsafe 块，inout 参数，LibC 内存管理
 17. [反射与注解](17_reflection_and_annotations.yaml) — 溢出注解，自定义注解，运行时反射
-18. [项目管理](18_project_init_build_run.yaml) — cjpm 命令，项目结构，cjpm.toml 配置，依赖管理
+18. [项目管理](18_project_init_build_run.yaml) — 仓颉项目的创建/配置/构建/运行/测试等（CJPM）
 19. [单元测试](19_unit_test.yaml) — 断言宏，生命周期钩子，参数化测试，Mock 框架，基准测试
