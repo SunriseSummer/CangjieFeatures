@@ -31,15 +31,15 @@ test_basics:
 
 assertions:
   macros:
-    - { macro: "@Assert(a, b)", behavior: "Fast fail — stops test immediately", description: "Equality assertion" }
-    - { macro: "@Expect(a, b)", behavior: "Soft fail — records failure, continues", description: "Equality assertion" }
-    - { macro: "@Assert(condition)", behavior: "Fast fail", description: "Boolean assertion" }
-    - { macro: "@Expect(condition)", behavior: "Soft fail", description: "Boolean assertion" }
-    - { macro: "@AssertThrows[ExType](expr)", behavior: "Fast fail", description: "Expects exception thrown" }
-    - { macro: "@ExpectThrows[ExType](expr)", behavior: "Soft fail", description: "Expects exception thrown" }
-    - { macro: "@Fail(msg)", behavior: "Force fail, stop", description: "Unconditional failure" }
-    - { macro: "@FailExpect(msg)", behavior: "Force fail, continue", description: "Unconditional failure" }
-    - { macro: "@PowerAssert(expr)", behavior: "Fast fail", description: "Detailed intermediate value diagram" }
+    - "@Assert(a, b)"              # Equality assertion, fast fail — stops test immediately
+    - "@Expect(a, b)"              # Equality assertion, soft fail — records failure, continues
+    - "@Assert(condition)"         # Boolean assertion, fast fail
+    - "@Expect(condition)"         # Boolean assertion, soft fail
+    - "@AssertThrows[ExType](expr)"  # Expects exception thrown, fast fail
+    - "@ExpectThrows[ExType](expr)"  # Expects exception thrown, soft fail
+    - "@Fail(msg)"                 # Unconditional failure, stops test
+    - "@FailExpect(msg)"           # Unconditional failure, continues
+    - "@PowerAssert(expr)"         # Detailed intermediate value diagram, fast fail
 
   equatable_requirement: |
     @Assert(a, b) / @Expect(a, b) requires a's type to implement Equatable<B>.
@@ -54,10 +54,10 @@ assertions:
 lifecycle:
   description: "Available only in test classes"
   hooks:
-    - { macro: "@BeforeAll", timing: "Once before all test cases" }
-    - { macro: "@BeforeEach", timing: "Before each test case" }
-    - { macro: "@AfterEach", timing: "After each test case" }
-    - { macro: "@AfterAll", timing: "Once after all test cases" }
+    - "@BeforeAll"                 # Once before all test cases
+    - "@BeforeEach"                # Before each test case
+    - "@AfterEach"                 # After each test case
+    - "@AfterAll"                  # Once after all test cases
   order: "BeforeAll → (BeforeEach → TestCase → AfterEach)* → AfterAll"
   example: |
     @Test
@@ -154,12 +154,12 @@ mock_framework:
     @On(spyObj.method()).callsOriginal()
 
   matchers:
-    - { matcher: "any() / _", description: "Any argument" }
-    - { matcher: "eq(value) / literal", description: "Structural equality" }
-    - { matcher: "same(ref)", description: "Reference equality" }
-    - { matcher: "ofType<T>()", description: "Type check" }
-    - { matcher: "argThat(predicate)", description: "Custom predicate" }
-    - { matcher: "capture(listener)", description: "Capture argument value" }
+    - "any() / _"                  # Any argument
+    - "eq(value) / literal"        # Structural equality
+    - "same(ref)"                  # Reference equality
+    - "ofType<T>()"                # Type check
+    - "argThat(predicate)"         # Custom predicate
+    - "capture(listener)"          # Capture argument value
 
   expectation_counts: |
     @On(foo.bar()).returns().once()            // exactly 1 time
@@ -226,12 +226,12 @@ benchmark:
     func measuredBench() { ... }
 
 cli_options:
-  - { option: "--filter=pattern", description: "Filter tests by wildcard" }
-  - { option: "--timeout-each=10s", description: "Per-test timeout" }
-  - { option: "--parallel", description: "Parallel execution" }
-  - { option: "--include-tags / --exclude-tags", description: "Tag-based filtering" }
-  - { option: "--report-path / --report-format", description: "Report output (xml/csv/html)" }
-  - { option: "--dry-run", description: "Print test list without running" }
-  - { option: "--no-capture-output", description: "Don't capture stdout" }
-  - { option: "--bench", description: "Run benchmarks (alternative to cjpm bench)" }
-  - { option: "--coverage-guided", description: "Coverage-guided testing" }
+  - "--filter=pattern"             # Filter tests by wildcard
+  - "--timeout-each=10s"           # Per-test timeout
+  - "--parallel"                   # Parallel execution
+  - "--include-tags / --exclude-tags"  # Tag-based filtering
+  - "--report-path / --report-format"  # Report output (xml/csv/html)
+  - "--dry-run"                    # Print test list without running
+  - "--no-capture-output"          # Don't capture stdout
+  - "--bench"                      # Run benchmarks (alternative to cjpm bench)
+  - "--coverage-guided"            # Coverage-guided testing

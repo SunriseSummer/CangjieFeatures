@@ -35,7 +35,7 @@ built_in_types:
     description: "UTF-8 encoded, immutable"
     interpolation: '"Hello, ${expr}!"'
     multiline: '"""triple-quoted"""'  # preserves content including indentation
-    indexing: "s[i] returns UInt8 (byte); for (b in s) iterates bytes (UInt8); use s.toRuneArray() for Rune iteration"
+    indexing: "s[i] returns UInt8 (byte); for (b in s) iterates bytes (UInt8); use s.runes() for Rune iteration"
   unit:
     type: Unit
     value: "()"

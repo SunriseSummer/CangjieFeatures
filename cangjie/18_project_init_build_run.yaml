@@ -48,14 +48,14 @@ cjpm_toml:
         version = "1.0.0"
         output-type = "executable"
     package_fields:
-      - { field: cjc-version, required: true, description: "Minimum cjc version" }
-      - { field: name, required: true, description: "Module name / root package name" }
-      - { field: version, required: true, description: "Module version" }
-      - { field: output-type, required: true, description: '"executable" | "static" | "dynamic"' }
-      - { field: compile-option, required: false, description: "Extra compiler flags" }
-      - { field: link-option, required: false, description: "Linker flags" }
-      - { field: src-dir, required: false, description: "Source directory path" }
-      - { field: target-dir, required: false, description: "Output directory path" }
+      - cjc-version                # (required) Minimum cjc version
+      - name                       # (required) Module name / root package name
+      - version                    # (required) Module version
+      - output-type                # (required) "executable" | "static" | "dynamic"
+      - compile-option             # Extra compiler flags
+      - link-option                # Linker flags
+      - src-dir                    # Source directory path
+      - target-dir                 # Output directory path
 
   workspace:
     example: |
@@ -63,46 +63,46 @@ cjpm_toml:
         members = ["app", "libs/core", "libs/util"]
     note: "[package] and [workspace] are mutually exclusive"
     workspace_fields:
-      - { field: members, required: true, description: "Member module paths" }
-      - { field: build-members, required: false, description: "Subset to compile" }
-      - { field: test-members, required: false, description: "Subset to test (must be subset of build-members)" }
-      - { field: compile-option, required: false, description: "Global compiler flags" }
-      - { field: link-option, required: false, description: "Global linker flags" }
+      - members                    # (required) Member module paths
+      - build-members              # Subset to compile
+      - test-members               # Subset to test (must be subset of build-members)
+      - compile-option             # Global compiler flags
+      - link-option                # Global linker flags
 
 build_options:
   flags:
-    - { flag: "-i, --incremental", description: "Incremental compilation" }
-    - { flag: "-j, --jobs <N>", description: "Parallel compilation threads" }
-    - { flag: "-g", description: "Debug build" }
-    - { flag: "-V, --verbose", description: "Show compilation details" }
-    - { flag: "--coverage", description: "Enable coverage instrumentation" }
-    - { flag: "--cfg <value>", description: "Conditional compilation variable" }
-    - { flag: "-m, --member <value>", description: "Specify workspace member" }
-    - { flag: "--target <value>", description: "Cross-compilation target" }
-    - { flag: "-o, --output <value>", description: "Output binary name (default: main)" }
-    - { flag: "-l, --lint", description: "Enable cjlint code checking" }
-    - { flag: "--mock", description: "Enable mock support" }
+    - "-i, --incremental"          # Incremental compilation
+    - "-j, --jobs <N>"             # Parallel compilation threads
+    - "-g"                         # Debug build
+    - "-V, --verbose"              # Show compilation details
+    - "--coverage"                 # Enable coverage instrumentation
+    - "--cfg <value>"              # Conditional compilation variable
+    - "-m, --member <value>"       # Specify workspace member
+    - "--target <value>"           # Cross-compilation target
+    - "-o, --output <value>"       # Output binary name (default: main)
+    - "-l, --lint"                 # Enable cjlint code checking
+    - "--mock"                     # Enable mock support
 
 run_options:
   flags:
-    - { flag: "--name <value>", description: "Specify binary name to run" }
-    - { flag: "--build-args <value>", description: "Arguments passed to build" }
-    - { flag: "--run-args <value>", description: "Arguments passed to executable" }
-    - { flag: "--skip-build", description: "Skip compilation, run directly" }
-    - { flag: "-g", description: "Run debug build" }
+    - "--name <value>"             # Specify binary name to run
+    - "--build-args <value>"       # Arguments passed to build
+    - "--run-args <value>"         # Arguments passed to executable
+    - "--skip-build"               # Skip compilation, run directly
+    - "-g"                         # Run debug build
   example: |
     cjpm run --build-args="-s -j16" --run-args="a b c"
 
 test_options:
   flags:
-    - { flag: "--filter <value>", description: "Filter test cases by wildcard pattern" }
-    - { flag: "--timeout-each <value>", description: "Per-test timeout, format: %d[millis|s|m|h]" }
-    - { flag: "--parallel <value>", description: "Parallel strategy: true/false/nCores/<N>" }
-    - { flag: "--random-seed <value>", description: "Random seed for test ordering" }
-    - { flag: "--no-color", description: "Disable colored output" }
-    - { flag: "--report-path <value>", description: "Test report output path" }
-    - { flag: "--report-format <value>", description: "Report format (xml)" }
-    - { flag: "--coverage", description: "Enable coverage statistics" }
+    - "--filter <value>"           # Filter test cases by wildcard pattern
+    - "--timeout-each <value>"     # Per-test timeout, format: %d[millis|s|m|h]
+    - "--parallel <value>"         # Parallel strategy: true/false/nCores/<N>
+    - "--random-seed <value>"      # Random seed for test ordering
+    - "--no-color"                 # Disable colored output
+    - "--report-path <value>"      # Test report output path
+    - "--report-format <value>"    # Report format (xml)
+    - "--coverage"                 # Enable coverage statistics
   examples: |
     cjpm test                              # run all tests
     cjpm test src/utils                    # test specific package
@@ -142,10 +142,10 @@ profile_config:
       MY_ENV = { value = "abc" }
       PATH = { value = "/usr/local/bin", splice-type = "prepend" }
   env_splice_types:
-    - { type: absent, description: "Only set if variable does not exist (default)" }
-    - { type: replace, description: "Replace existing value" }
-    - { type: prepend, description: "Insert before existing value" }
-    - { type: append, description: "Append after existing value" }
+    - absent: "Only set if variable does not exist (default)"
+    - replace: "Replace existing value"
+    - prepend: "Insert before existing value"
+    - append: "Append after existing value"
 
 ffi_config: |
   [ffi.c]
