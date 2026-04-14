@@ -51,7 +51,7 @@ reflection:
   type_info:
     description: "Runtime type information access"
     obtaining:
-      from_instance: "TypeInfo.of(anyInstance)          // runtime type"
+      from_instance: "ClassTypeInfo.of(objectInstance)    // runtime type (preferred over deprecated TypeInfo.of)"
       from_generic: "TypeInfo.of<T>()                    // static type T"
       from_name: 'TypeInfo.get("module.package.Type")  // lookup by qualified name'
     throws: "InfoNotFoundException if type not found"

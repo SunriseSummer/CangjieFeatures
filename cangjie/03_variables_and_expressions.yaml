@@ -32,6 +32,11 @@ expressions:
       let y = match (v) { case 1 => "one"; case _ => "other" }
       let z = try { riskyOp() } catch (_: Exception) { fallback }
 
+  code_block_rule: |
+    Standalone code blocks { exprs } are NOT valid expressions in Cangjie.
+    Code blocks can only appear attached to if/while/for-in/match/func/lambda.
+    Example of INVALID code: let r = { let x = 2; x ** 3 }  // ERROR
+
   if_expression:
     syntax: |
       if (condition) {
@@ -101,7 +106,7 @@ expressions:
   loop_control:
     break: "break  # exits innermost loop"
     continue: "continue  # skips to next iteration"
-    note: "No labeled break/continue"
+    note: "No labeled break/continue. Both have type Nothing."
 
   conditional_expressions:
     ternary_like: "let x = if (cond) { a } else { b }  # if is an expression"

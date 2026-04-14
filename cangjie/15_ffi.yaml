@@ -103,6 +103,6 @@ memory_management:
   note: |
     C memory is not managed by Cangjie GC.
     Use LibC utilities for manual allocation/deallocation:
-      let ptr = LibC.malloc<Int32>(10)   // allocate
-      LibC.free(ptr)                      // deallocate
+      let ptr = LibC.malloc<Int32>(count: 10)   // allocate 10 Int32s
+      LibC.free(ptr)                             // deallocate
     CString from mallocCString must be freed manually.

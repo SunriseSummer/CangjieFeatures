@@ -20,6 +20,7 @@ keywords:
     - init      # constructor
     - prop      # property declaration
     - main      # entry point (no func keyword needed)
+    - operator  # operator function declaration
   modifiers:
     - public     # visible everywhere
     - private    # visible only in same file
@@ -52,6 +53,28 @@ keywords:
     - catch
     - finally
     - spawn     # create lightweight thread
+    - synchronized  # synchronized block/expression
+  type_keywords:
+    - Bool
+    - Rune
+    - Float16
+    - Float32
+    - Float64
+    - Int8
+    - Int16
+    - Int32
+    - Int64
+    - IntNative
+    - UInt8
+    - UInt16
+    - UInt32
+    - UInt64
+    - UIntNative
+    - Array
+    - VArray
+    - String
+    - Nothing
+    - Unit
   type_related:
     - is       # runtime type check → Bool
     - as       # safe type cast → Option<T>
@@ -59,9 +82,9 @@ keywords:
     - super    # parent class reference
     - true
     - false
-    - Nothing  # bottom type (no value)
   special:
     - This     # self-referential return type in classes
+    - quote    # macro quote expression
 
 identifiers:
   rules:

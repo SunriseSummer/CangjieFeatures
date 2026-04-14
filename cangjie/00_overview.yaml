@@ -66,3 +66,7 @@ language:
       - "Array<T>"
       - "Function types"
     note: "Assignment of value types copies data; reference types share identity"
+    array_caveat: |
+      Array is defined as a struct but stores data in managed memory.
+      After assignment, two variables share the same underlying storage —
+      modifications through one variable are visible through the other.
