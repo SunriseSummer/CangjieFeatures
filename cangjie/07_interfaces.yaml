@@ -88,10 +88,7 @@ interface_inheritance:
     interface ReadWriteStream <: InputStream & OutputStream {
         // inherits all members from both
     }
-  diamond: |
-    If two parent interfaces provide the same default implementation,
-    the implementing class/struct must override it to resolve ambiguity.
-    The compiler will report an error if conflicting defaults are not resolved.
+  diamond: "If two parent interfaces provide the same default, the implementer must override to resolve ambiguity"
 
 mut_function_rules:
   description: "How mut functions in interfaces interact with class and struct implementations"
@@ -112,10 +109,7 @@ sealed_interface:
   use_case: "Controlled set of implementations for exhaustive matching"
 
 any_interface:
-  description: |
-    Any is the built-in top interface.
-    All non-interface types implicitly implement Any.
-    Can be used as a universal type parameter bound.
+  description: "Any is the built-in top interface. All non-interface types implicitly implement Any."
 
 access_rules:
   interface_members: "Default to public; must be implemented as public"

@@ -13,9 +13,8 @@ struct_definition:
 
   value_type: |
     Structs are value types:
-    - Assignment copies the entire struct
+    - Assignment copies the entire struct (no reference sharing)
     - Passed by value to functions
-    - No reference sharing (unlike class)
 
   example: |
     struct Point {
@@ -46,10 +45,7 @@ constructors:
           public Pair(let first: Int64, let second: Int64) {}
       }
     note: "Primary constructor name matches struct name, defined INSIDE body"
-  auto_generated: |
-    If all fields have default values and no explicit constructor,
-    a parameterless init() is auto-generated.
-    Note: No parameterized constructor is auto-generated.
+  auto_generated: "If all fields have defaults and no explicit constructor, parameterless init() is auto-generated"
 
   static_initializer:
     syntax: |
@@ -119,6 +115,14 @@ properties:
         set(v) { /* assign */ }
     }
   note: "mut prop setters behave like mut functions — only callable on var-bound instances"
+
+subscript_operator:
+  syntax: |
+    // GET — returns element at index
+    public operator func [](index: Int64): T { ... }
+    // SET — must be marked mut for structs
+    public mut operator func [](index: Int64, value!: T): Unit { ... }
+  note: "Subscript SET in struct must be marked mut; named param value! uses default label"
 
 interface_implementation:
   rules:
