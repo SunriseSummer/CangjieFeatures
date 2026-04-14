@@ -95,6 +95,60 @@ identifiers:
     - "Unicode letters are allowed"
   raw_identifier: "`keyword`"   # use keyword as identifier by wrapping in backticks
 
+literals:
+  Int:
+    examples:
+      - "42"          # decimal
+      - "0xFF"        # hexadecimal
+      - "0o77"        # octal
+      - "0b1010"      # binary
+      - "1_000_000"   # underscores for readability
+    suffixes:
+      - i8
+      - i16
+      - i32
+      - i64       # default
+      - u8
+      - u16
+      - u32
+      - u64
+  Float:
+    examples:
+      - "3.14"        # Float64 (default)
+      - "2.5e10"      # scientific notation
+      - "1.0f32"      # Float32 suffix
+    suffixes:
+      - f32
+      - f64       # default
+  Bool: ["true", "false"]
+  Rune:
+    examples:
+      - "r'A'"          # canonical Rune literal (r prefix)
+      - "r'\\n'"        # escape character
+      - "r'\\u{1F600}'" # Unicode code point
+    note: "Without r prefix, a single-char string literal in Rune-expected context is implicitly converted to Rune"
+  String:
+    single_line:
+      - '"Hello, ${name}!"'  # interpolation with ${expr}
+      - "'Hello, ${name}!'"  # single quotes are also supported
+    multi_line: |
+      let s = """
+          multi-line string
+          preserves content as-is including indentation
+          supports ${interpolation}
+          """
+    raw: |
+      #"raw string \n not escaped"#
+      ##"can contain "# inside"##
+    byte_literal: "b'A'"  # UInt8 byte literal (ASCII character)
+  Array: "[1, 2, 3]"      # Array<Int64>
+  Tuple: "(1, true, 3.0)" # (Int64, Bool, Float64)
+  Range:
+    - "1..5"         # Range<Int64> half-open [1,5)
+    - "1..6:2"       # [1,5) by step 2: 1, 3, 5
+    - "1..=5"        # Range<Int64> fully inclusive [1,5] (with ..= operator)
+  Unit: "()"
+
 operators:
   by_precedence:  # highest to lowest
     - level: 1
@@ -208,57 +262,3 @@ operators:
       Binary: +, -, *, /, %, **, <<, >>, &, |, ^, ==, !=, <, <=, >, >=
       Subscript: [] (single operator for both get and set; setter requires named parameter `value!`)
       Call: () (function call operator)
-
-literals:
-  Int:
-    examples:
-      - "42"          # decimal
-      - "0xFF"        # hexadecimal
-      - "0o77"        # octal
-      - "0b1010"      # binary
-      - "1_000_000"   # underscores for readability
-    suffixes:
-      - i8
-      - i16
-      - i32
-      - i64       # default
-      - u8
-      - u16
-      - u32
-      - u64
-  Float:
-    examples:
-      - "3.14"        # Float64 (default)
-      - "2.5e10"      # scientific notation
-      - "1.0f32"      # Float32 suffix
-    suffixes:
-      - f32
-      - f64       # default
-  Bool: ["true", "false"]
-  Rune:
-    examples:
-      - "r'A'"          # canonical Rune literal (r prefix)
-      - "r'\\n'"        # escape character
-      - "r'\\u{1F600}'" # Unicode code point
-    note: "Without r prefix, a single-char string literal in Rune-expected context is implicitly converted to Rune"
-  String:
-    single_line:
-      - '"Hello, ${name}!"'  # interpolation with ${expr}
-      - "'Hello, ${name}!'"  # single quotes are also supported
-    multi_line: |
-      let s = """
-          multi-line string
-          preserves content as-is including indentation
-          supports ${interpolation}
-          """
-    raw: |
-      #"raw string \n not escaped"#
-      ##"can contain "# inside"##
-    byte_literal: "b'A'"  # UInt8 byte literal (ASCII character)
-  Array: "[1, 2, 3]"      # Array<Int64>
-  Tuple: "(1, true, 3.0)" # (Int64, Bool, Float64)
-  Range:
-    - "1..5"         # Range<Int64> half-open [1,5)
-    - "1..6:2"       # [1,5) by step 2: 1, 3, 5
-    - "1..=5"        # Range<Int64> fully inclusive [1,5] (with ..= operator)
-  Unit: "()"
