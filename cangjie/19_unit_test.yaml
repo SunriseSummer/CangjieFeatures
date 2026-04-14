@@ -1,0 +1,237 @@
+# Cangjie Unit Testing
+# Test framework, assertions, lifecycle, parameterized tests, mock
+
+test_basics:
+  setup: |
+    # Test file: src/xxx_test.cj (alongside src/xxx.cj)
+    # In test mode, unittest and unittest.testmacro are auto-imported
+    # Run with: cjpm test
+
+  test_function:
+    syntax: |
+      @Test
+      func addTest() {
+          @Expect(add(2, 3), 5)
+      }
+    note: "Top-level function annotated with @Test; contains a single test case"
+
+  test_class:
+    syntax: |
+      @Test
+      class MathTests {
+          @TestCase
+          func addPositive() { @Expect(add(2, 3), 5) }
+
+          @TestCase
+          func addZero() { @Expect(add(0, 0), 0) }
+      }
+    rules:
+      - "Class annotated with @Test, must have parameterless constructor"
+      - "Methods annotated with @TestCase, each is one test case"
+
+assertions:
+  macros:
+    - { macro: "@Assert(a, b)", behavior: "Fast fail — stops test immediately", description: "Equality assertion" }
+    - { macro: "@Expect(a, b)", behavior: "Soft fail — records failure, continues", description: "Equality assertion" }
+    - { macro: "@Assert(condition)", behavior: "Fast fail", description: "Boolean assertion" }
+    - { macro: "@Expect(condition)", behavior: "Soft fail", description: "Boolean assertion" }
+    - { macro: "@AssertThrows[ExType](expr)", behavior: "Fast fail", description: "Expects exception thrown" }
+    - { macro: "@ExpectThrows[ExType](expr)", behavior: "Soft fail", description: "Expects exception thrown" }
+    - { macro: "@Fail(msg)", behavior: "Force fail, stop", description: "Unconditional failure" }
+    - { macro: "@FailExpect(msg)", behavior: "Force fail, continue", description: "Unconditional failure" }
+    - { macro: "@PowerAssert(expr)", behavior: "Fast fail", description: "Detailed intermediate value diagram" }
+
+  equatable_requirement: |
+    @Assert(a, b) / @Expect(a, b) requires a's type to implement Equatable<B>.
+    For custom types without Equatable, use @Derive[Equatable] or implement manually.
+
+  float_approximate: |
+    @Expect(1.0, 1.001, delta: 0.001)
+    // Or use boolean assertion:
+    import std.math.*
+    @Expect(abs(actual - expected) < 0.001)
+
+lifecycle:
+  description: "Available only in test classes"
+  hooks:
+    - { macro: "@BeforeAll", timing: "Once before all test cases" }
+    - { macro: "@BeforeEach", timing: "Before each test case" }
+    - { macro: "@AfterEach", timing: "After each test case" }
+    - { macro: "@AfterAll", timing: "Once after all test cases" }
+  order: "BeforeAll → (BeforeEach → TestCase → AfterEach)* → AfterAll"
+  example: |
+    @Test
+    class DbTests {
+        var conn = ""
+
+        @BeforeAll
+        func setupAll() { conn = "connected" }
+
+        @AfterAll
+        func teardownAll() { conn = "" }
+
+        @BeforeEach
+        func setup() { /* reset state */ }
+
+        @TestCase
+        func queryTest() { @Expect(conn, "connected") }
+    }
+
+parameterized_tests:
+  value_driven: |
+    @Test[x in [1, 2, 3]]
+    func squareTest(x: Int64) {
+        @Expect(x * x > 0)
+    }
+
+  range_driven: |
+    @Test[x in 0..10]
+    func rangeTest(x: Int64) {
+        @Expect(x >= 0)
+    }
+
+  random: |
+    @Test[x in random()]
+    func randomTest(x: Int64) {
+        // ~200 random values, biased toward boundary values
+    }
+
+  multi_param: |
+    @Test[x in [1, 2], y in ["a", "b"]]
+    func multiTest(x: Int64, y: String) {
+        // Cartesian product: (1,"a"), (1,"b"), (2,"a"), (2,"b")
+    }
+
+  type_param: |
+    @Types[T in <Int64, Float64, String>]
+    @Test
+    func genericTest<T>() { ... }
+
+test_configuration:
+  configure: |
+    @Configure[randomSeed: 42, generationSteps: 1000]
+    @Test
+    class ConfiguredTests { ... }
+
+  tags: |
+    @Tag["fast"]
+    @TestCase
+    func fastTest() { ... }
+    // CLI: cjpm test --include-tags "fast" --exclude-tags "slow"
+
+  skip: |
+    @Skip
+    @TestCase
+    func skippedTest() { ... }
+
+  timeout: |
+    @Timeout[Duration.second * 5]
+    @TestCase
+    func timeoutTest() { ... }
+
+  parallel: |
+    @Parallel
+    @Test
+    class ParallelTests { ... }
+
+mock_framework:
+  create_mock: |
+    let repo = mock<Repository>()                      // skeleton, no default behavior
+    let repo2 = mock<Repository>([ReturnsDefaults])    // auto-returns defaults
+    let spyObj = spy<Service>(realService)              // wraps real object
+
+  stub_with_on: |
+    // Return value
+    @On(repo.getData(testId, _)).returns(testResponse)
+    // Throw exception
+    @On(repo.getData(_)).throws(TimeoutException())
+    // Consecutive returns
+    @On(repo.getData(_)).returnsConsecutively([v1, v2, v3])
+    // Property getter/setter
+    @On(foo.name).returns("test")
+    @On(foo.name = _).doesNothing()
+    // Delegate to real implementation (spy)
+    @On(spyObj.method()).callsOriginal()
+
+  matchers:
+    - { matcher: "any() / _", description: "Any argument" }
+    - { matcher: "eq(value) / literal", description: "Structural equality" }
+    - { matcher: "same(ref)", description: "Reference equality" }
+    - { matcher: "ofType<T>()", description: "Type check" }
+    - { matcher: "argThat(predicate)", description: "Custom predicate" }
+    - { matcher: "capture(listener)", description: "Capture argument value" }
+
+  expectation_counts: |
+    @On(foo.bar()).returns().once()            // exactly 1 time
+    @On(foo.bar()).returns().times(3)          // exactly 3 times
+    @On(foo.bar()).returns().atLeastOnce()     // at least 1 time
+    @On(foo.bar()).returns().anyTimes()        // any number of times
+
+  verify: |
+    Verify.that(@Called(foo.bar()))               // at least once
+    Verify.that(@Called(foo.bar()).once())         // exactly once
+    Verify.that(@Called(foo.bar()).never())        // never called
+    Verify.noInteractions(mockObj)                // no interactions
+
+    // Ordered verification
+    Verify.ordered(
+        @Called(foo.step1()),
+        @Called(foo.step2())
+    )
+
+dynamic_tests: |
+  @TestBuilder
+  func dynamicTests(): TestSuite {
+      TestSuite.builder("DynTests")
+          .add(UnitTestCase.create("case1") { @Expect(1, 1) })
+          .add(UnitTestCase.create("case2") { @Expect(2, 2) })
+          .build()
+  }
+
+test_template: |
+  @TestTemplate
+  abstract class BaseTests {
+      @BeforeEach
+      func setup() { /* common setup */ }
+
+      @TestCase
+      func commonTest() { /* shared test */ }
+  }
+
+  @Test
+  class MyTests <: BaseTests {
+      @TestCase
+      func specificTest() { /* additional test */ }
+  }
+
+benchmark:
+  basic: |
+    @Test
+    class MyBench {
+        @Bench
+        func sortBench() {
+            let arr = Array<Int64>(10000, repeat: 0)
+            // benchmark body
+        }
+
+        @Bench[size in [1000, 10000, 100000]]
+        func paramBench(size: Int64) {
+            // parameterized benchmark
+        }
+    }
+  run: "cjpm bench"
+  measurement: |
+    @Measure[TimeNow(Nanos), CpuCycles()]
+    @Bench
+    func measuredBench() { ... }
+
+cli_options:
+  - { option: "--filter=pattern", description: "Filter tests by wildcard" }
+  - { option: "--timeout-each=10s", description: "Per-test timeout" }
+  - { option: "--parallel", description: "Parallel execution" }
+  - { option: "--include-tags / --exclude-tags", description: "Tag-based filtering" }
+  - { option: "--report-path / --report-format", description: "Report output (xml/csv/html)" }
+  - { option: "--dry-run", description: "Print test list without running" }
+  - { option: "--no-capture-output", description: "Don't capture stdout" }
+  - { option: "--bench", description: "Run benchmarks" }
+  - { option: "--coverage-guided", description: "Coverage-guided testing" }

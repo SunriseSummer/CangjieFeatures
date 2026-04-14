@@ -130,7 +130,7 @@ inheritance:
 
   super_calls:
     syntax: "super.methodName(args)"
-    constructor: "super(args)  # in init()"
+    constructor: "super(args)"  # in init()
 
   this_type:
     description: "This refers to the actual runtime type of the object"

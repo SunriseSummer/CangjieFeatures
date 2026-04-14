@@ -1,0 +1,174 @@
+# Cangjie Project Management
+# cjpm commands, project creation, configuration, build, run, test
+
+cjpm_overview:
+  tool: cjpm
+  description: "Cangjie package manager — project init, build, run, test, dependency management"
+  config_file: cjpm.toml
+
+quick_start:
+  commands:
+    init: "cjpm init"                        # create executable project
+    init_lib: "cjpm init --type=static"      # create static library project
+    init_workspace: "cjpm init --workspace"  # create workspace
+    build: "cjpm build"                      # compile project
+    run: "cjpm run"                          # build and run
+    test: "cjpm test"                        # build and run tests
+    bench: "cjpm bench"                      # build and run benchmarks
+    clean: "cjpm clean"                      # remove build artifacts
+    install: "cjpm install"                  # install executable
+    tree: "cjpm tree"                        # show dependency tree
+
+project_structure:
+  layout: |
+    myapp/
+    ├── cjpm.toml              # project configuration
+    ├── src/
+    │   ├── main.cj            # main entry (executable type)
+    │   ├── lib_test.cj        # test file (_test.cj suffix)
+    │   └── utils/
+    │       └── helper.cj      # sub-package
+    └── target/                # build output (auto-generated)
+
+  minimal_main: |
+    // src/main.cj
+    package myapp
+
+    main(): Int64 {
+        println("Hello, Cangjie!")
+        return 0
+    }
+
+cjpm_toml:
+  single_module:
+    example: |
+      [package]
+        cjc-version = "1.0.5"
+        name = "myapp"
+        version = "1.0.0"
+        output-type = "executable"
+    package_fields:
+      - { field: cjc-version, required: true, description: "Minimum cjc version" }
+      - { field: name, required: true, description: "Module name / root package name" }
+      - { field: version, required: true, description: "Module version" }
+      - { field: output-type, required: true, description: '"executable" | "static" | "dynamic"' }
+      - { field: compile-option, required: false, description: "Extra compiler flags" }
+      - { field: link-option, required: false, description: "Linker flags" }
+      - { field: src-dir, required: false, description: "Source directory path" }
+      - { field: target-dir, required: false, description: "Output directory path" }
+
+  workspace:
+    example: |
+      [workspace]
+        members = ["app", "libs/core", "libs/util"]
+    note: "[package] and [workspace] are mutually exclusive"
+    workspace_fields:
+      - { field: members, required: true, description: "Member module paths" }
+      - { field: build-members, required: false, description: "Subset to compile" }
+      - { field: test-members, required: false, description: "Subset to test (must be subset of build-members)" }
+      - { field: compile-option, required: false, description: "Global compiler flags" }
+      - { field: link-option, required: false, description: "Global linker flags" }
+
+build_options:
+  flags:
+    - { flag: "-i, --incremental", description: "Incremental compilation" }
+    - { flag: "-j, --jobs <N>", description: "Parallel compilation threads" }
+    - { flag: "-g", description: "Debug build" }
+    - { flag: "-V, --verbose", description: "Show compilation details" }
+    - { flag: "--coverage", description: "Enable coverage instrumentation" }
+    - { flag: "--cfg <value>", description: "Conditional compilation variable" }
+    - { flag: "-m, --member <value>", description: "Specify workspace member" }
+    - { flag: "--target <value>", description: "Cross-compilation target" }
+    - { flag: "-o, --output <value>", description: "Output binary name (default: main)" }
+    - { flag: "-l, --lint", description: "Enable cjlint code checking" }
+    - { flag: "--mock", description: "Enable mock support" }
+
+run_options:
+  flags:
+    - { flag: "--name <value>", description: "Specify binary name to run" }
+    - { flag: "--build-args <value>", description: "Arguments passed to build" }
+    - { flag: "--run-args <value>", description: "Arguments passed to executable" }
+    - { flag: "--skip-build", description: "Skip compilation, run directly" }
+    - { flag: "-g", description: "Run debug build" }
+  example: |
+    cjpm run --build-args="-s -j16" --run-args="a b c"
+
+test_options:
+  flags:
+    - { flag: "--filter <value>", description: "Filter test cases by wildcard pattern" }
+    - { flag: "--timeout-each <value>", description: "Per-test timeout, format: %d[millis|s|m|h]" }
+    - { flag: "--parallel <value>", description: "Parallel strategy: true/false/nCores/<N>" }
+    - { flag: "--random-seed <value>", description: "Random seed for test ordering" }
+    - { flag: "--no-color", description: "Disable colored output" }
+    - { flag: "--report-path <value>", description: "Test report output path" }
+    - { flag: "--report-format <value>", description: "Report format (xml)" }
+    - { flag: "--coverage", description: "Enable coverage statistics" }
+  examples: |
+    cjpm test                              # run all tests
+    cjpm test src/utils                    # test specific package
+    cjpm test --filter "testAdd"           # filter by name
+    cjpm test --timeout-each 30s           # 30s per-test timeout
+    cjpm test --parallel 4                 # 4-thread parallel
+
+dependencies:
+  source_dependency: |
+    [dependencies]
+      # local path dependency
+      core = { path = "./libs/core" }
+      # git dependency (branch)
+      logger = { git = "https://example.com/logger.git", branch = "main" }
+      # git dependency (tag)
+      utils = { git = "https://example.com/utils.git", tag = "v1.0.0" }
+
+  test_dependency: |
+    [test-dependencies]
+      mock_lib = { path = "./test_libs/mock" }
+
+  dependency_replace: |
+    [replace]
+      logger = { path = "./local_logger" }
+
+profile_config:
+  build_profile: |
+    [profile.build]
+      compile-option = "-O2"
+      lto = "full"                           # "thin" or "full" (Linux only)
+  test_profile: |
+    [profile.test]
+      compile-option = "-g"
+      mock = "on"                            # "on" (default) / "off" / "runtime-error"
+  test_env: |
+    [profile.test.env]
+      MY_ENV = { value = "abc" }
+      PATH = { value = "/usr/local/bin", splice-type = "prepend" }
+  env_splice_types:
+    - { type: absent, description: "Only set if variable does not exist (default)" }
+    - { type: replace, description: "Replace existing value" }
+    - { type: prepend, description: "Insert before existing value" }
+    - { type: append, description: "Append after existing value" }
+
+ffi_config: |
+  [ffi.c]
+    myc.path = "./c_libs"
+
+cross_compilation: |
+  [target.x86_64-unknown-linux-gnu]
+    compile-option = "-O2"
+    link-option = "-L/usr/lib"
+
+  # Command: cjpm build --target x86_64-w64-mingw32
+
+build_script:
+  description: "Place build.cj in project root for pre/post-build custom logic"
+  skip: "--skip-script to bypass execution"
+
+key_rules:
+  - "cjpm.toml: [package] and [workspace] are mutually exclusive"
+  - "Test files: suffix _test.cj, annotated with @Test"
+  - "Test imports: std.unittest.* and std.unittest.testmacro.* (auto-imported in test mode)"
+  - "Default output: executable named main in target/release/bin/"
+  - "Incremental build: use -i flag"
+  - "Lock file: cjpm.lock auto-generated, cjpm update to refresh"
+  - "Workspace member build: -m <member>"
+  - "Coverage: --coverage with cjcov for reports"
+  - "Priority: command-line options > config file options"

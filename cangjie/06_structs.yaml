@@ -59,8 +59,8 @@ constructors:
 
 mutability:
   struct_binding:
-    immutable: "let p = Point(1.0, 2.0)  # cannot modify any field"
-    mutable: "var p = Point(1.0, 2.0)  # can modify var fields"
+    immutable: "let p = Point(1.0, 2.0)"  # cannot modify any field
+    mutable: "var p = Point(1.0, 2.0)"  # can modify var fields
     note: "Only var fields of a var-bound struct can be modified"
 
   mut_functions:
