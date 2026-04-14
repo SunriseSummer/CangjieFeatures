@@ -6,17 +6,16 @@ keywords:
     - let       # immutable binding
     - var       # mutable binding
     - const     # compile-time constant
-    - func      # function declaration
-    - class     # class declaration
-    - struct    # struct declaration
-    - enum      # enum declaration
-    - interface # interface declaration
+    - func
+    - class
+    - struct
+    - enum
+    - interface
     - extend    # type extension
     - type      # type alias
     - macro     # macro declaration
-    - package   # package declaration
-    - import    # import declaration
-    - foreign   # foreign (C) function declaration
+    - package
+    - import    # import packages
     - init      # constructor
     - prop      # property declaration
     - main      # entry point (no func keyword needed)
@@ -33,8 +32,6 @@ keywords:
     - static     # belongs to type, not instance
     - sealed     # contextual; restricts inheritance/implementation to same package
     - mut        # mutable property or struct-mutating function
-    - unsafe     # unsafe block for FFI
-    - inout      # pass-by-reference to C function
   control_flow:
     - if
     - else
@@ -80,10 +77,15 @@ keywords:
     - as       # safe type cast → Option<T>
     - this     # current instance reference
     - super    # parent class reference
+    - This     # self-referential return type in classes
     - true
     - false
-  special:
-    - This     # self-referential return type in classes
+  ffi:
+    - foreign    # foreign C function declaration
+    - unsafe     # unsafe block for CFFI
+    - inout      # pass-by-reference to C function
+  macro:
+    - macro
     - quote    # macro quote expression
 
 identifiers:
@@ -208,25 +210,37 @@ operators:
       Call: () (function call operator)
 
 literals:
-  integer:
-    - "42          # decimal"
-    - "0xFF        # hexadecimal"
-    - "0o77        # octal"
-    - "0b1010      # binary"
-    - "1_000_000   # underscores for readability"
-    suffixes: "i8, i16, i32, i64 (default), u8, u16, u32, u64"
-  floating_point:
-    - "3.14        # Float64 (default)"
-    - "2.5e10      # scientific notation"
-    - "1.0f32      # Float32 suffix"
-    suffixes: "f32, f64 (default)"
-  boolean: ["true", "false"]
-  rune:
-    - "'A'         # character literal"
-    - "'\\n'        # escape character"
-    - "'\\u{1F600}' # Unicode code point"
-  string:
-    single_line: '"Hello, ${name}!"  # interpolation with ${expr}'
+  Int:
+    - "42"          # decimal
+    - "0xFF"        # hexadecimal
+    - "0o77"        # octal
+    - "0b1010"      # binary
+    - "1_000_000"   # underscores for readability
+    suffixes:
+      - "i8"
+      - "i16"
+      - "i32"
+      - "i64"       # default
+      - "u8"
+      - "u16"
+      - "u32"
+      - "u64"
+  Float:
+    - "3.14"        # Float64 (default)
+    - "2.5e10"      # scientific notation
+    - "1.0f32"      # Float32 suffix
+    suffixes:
+      - "f32"
+      - "f64"       # default
+  Bool: ["true", "false"]
+  Rune:
+    - "'A'"          # character literal
+    - "'\\n'"        # escape character
+    - "'\\u{1F600}'" # Unicode code point
+  String:
+    single_line:
+      - '"Hello, ${name}!"'  # interpolation with ${expr}
+      - "'Hello, ${name}!'"  # single quotes are also supported
     multi_line: |
       let s = """
           multi-line string
@@ -236,11 +250,11 @@ literals:
     raw: |
       #"raw string \n not escaped"#
       ##"can contain "# inside"##
-    byte_literal: "b'A'  # UInt8 byte literal (ASCII character)"
-  array: "[1, 2, 3]      # Array<Int64>"
-  tuple: "(1, true, 3.0) # (Int64, Bool, Float64)"
-  range:
-    - "1..5         # Range<Int64> inclusive [1,5)"
-    - "1..=5        # Range<Int64> fully inclusive [1,5] (with ..= operator)"
-  unit: "()"
-  none: "None  # Option<T>.None"
+    byte_literal: "b'A'"  # UInt8 byte literal (ASCII character)
+  Array: "[1, 2, 3]"      # Array<Int64>
+  Tuple: "(1, true, 3.0)" # (Int64, Bool, Float64)
+  Range:
+    - "1..5"         # Range<Int64> inclusive [1,5)
+    - "1..6:2"       # [1,5) by step 2: 1, 3, 5
+    - "1..=5"        # Range<Int64> fully inclusive [1,5] (with ..= operator)
+  Unit: "()"
