@@ -4,7 +4,7 @@ variables:
   immutable:
     keyword: let
     syntax: "let name: Type = value"
-    inference: "let name = value  # type inferred"
+    inference: "let name = value"  # type inferred
     note: "Cannot be reassigned after initialization"
   mutable:
     keyword: var
@@ -18,7 +18,7 @@ variables:
 
   destructuring:
     tuple: "let (x, y) = (1, 2)"
-    wildcard: "let (_, y) = (1, 2)  # ignore first element"
+    wildcard: "let (_, y) = (1, 2)"  # ignore first element
 
   scope: |
     Block-scoped with lexical scoping:
@@ -104,16 +104,16 @@ expressions:
     exhaustiveness: "Must cover all cases; use _ for catch-all"
 
   loop_control:
-    break: "break  # exits innermost loop"
-    continue: "continue  # skips to next iteration"
+    break: "break"     # exits innermost loop
+    continue: "continue"  # skips to next iteration
     note: "No labeled break/continue. Both have type Nothing."
 
   conditional_expressions:
-    ternary_like: "let x = if (cond) { a } else { b }  # if is an expression"
+    ternary_like: "let x = if (cond) { a } else { b }"  # if is an expression
 
   range_expressions:
-    half_open: "1..5      # [1, 5)"
-    closed: "1..=5     # [1, 5]"
+    half_open: "1..5"      # [1, 5)
+    closed: "1..=5"       # [1, 5]
     countable: "Range works with any type implementing Countable<T>"
 
   assignment:

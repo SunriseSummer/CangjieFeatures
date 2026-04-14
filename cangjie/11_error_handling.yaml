@@ -17,9 +17,9 @@ exception_hierarchy:
       - "init()"
       - "init(message: String)"
     members:
-      - "message: String                  # error message"
-      - "toString(): String               # string representation"
-      - "printStackTrace(): Unit          # print stack trace"
+      - "message: String"                  # error message
+      - "toString(): String"               # string representation
+      - "printStackTrace(): Unit"          # print stack trace
 
   custom_exception: |
     open class BusinessException <: Exception {

@@ -12,10 +12,10 @@ function_declaration:
           return a + b
       }
     implicit_return: "Last expression is return value if no explicit return"
-    unit_return: "func greet(): Unit { println(\"hi\") }  # `: Unit` optional"
+    unit_return: "func greet(): Unit { println(\"hi\") }"  # `: Unit` optional
 
   named_parameters:
-    syntax: "func f(name!: Type)  # caller uses f(name: value)"
+    syntax: "func f(name!: Type)"  # caller uses f(name: value)
     with_default: "func f(name!: Type = defaultValue)"
     ordering_rule: "Non-named parameters must come before named parameters"
     example: |
@@ -50,8 +50,8 @@ function_declaration:
 
 lambda_and_closures:
   lambda_syntax:
-    typed: "{ x: Int64, y: Int64 => x + y }  # types on params directly"
-    inferred: "{ x => x * 2 }  # parameter type inferred from context"
+    typed: "{ x: Int64, y: Int64 => x + y }"  # types on params directly
+    inferred: "{ x => x * 2 }"  # parameter type inferred from context
     no_param: "{ => println(\"hello\") }"
     note: "Braces are always required; parameters come before =>"
 
