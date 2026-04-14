@@ -8,11 +8,12 @@ direct_extension:
   example: |
     extend String {
         public func isPalindrome(): Bool {
-            let chars = Array<Rune>(this)
+            let runes = ArrayList<Rune>()
+            for (r in this.runes()) { runes.add(r) }
             var i = 0
-            var j = chars.size - 1
+            var j = runes.size - 1
             while (i < j) {
-                if (chars[i] != chars[j]) { return false }
+                if (runes[i] != runes[j]) { return false }
                 i += 1; j -= 1
             }
             return true
