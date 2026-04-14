@@ -61,9 +61,20 @@ enum_definition:
     let s = Shape.Circle(5.0)
     let e: Expr = Add(Num(1), Num(2))    // type context allows short form
 
+  constructor_naming: |
+    Constructor names cannot be Cangjie keywords (e.g., Bool, String, Int64).
+    To use a keyword as constructor name, escape with backticks: `Bool`, `String`.
+
   equality: |
     Enums do NOT support == by default.
-    Must manually implement operator func == with match:
+    Recommended: use @Derive[Equatable] to auto-generate equality:
+      import std.deriving.*
+      @Derive[Equatable]
+      enum Color {
+          | Red | Green | Blue
+      }
+      // Now Color.Red == Color.Red works
+    Alternative: manually implement operator func == with match:
       enum Color {
           | Red | Green | Blue
           public operator func ==(rhs: Color): Bool {

@@ -25,6 +25,7 @@ direct_extension:
     // Usage: "racecar".isPalindrome()  // true
 
   generic_extension: |
+    // Form A: Parameterized extension
     extend<T> Array<T> where T <: ToString {
         public func joinToString(separator: String): String {
             var result = ""
@@ -35,6 +36,10 @@ direct_extension:
             result
         }
     }
+    // Form B: Fully instantiated extension (no type parameter)
+    // extend Array<Int64> { ... }
+  non_extensible: |
+    Function types, tuple types, and interface types cannot be extended directly.
 
 interface_extension:
   syntax: |
