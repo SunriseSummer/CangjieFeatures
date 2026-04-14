@@ -81,14 +81,14 @@ visibility:
     Exception: internal types can be used in public function/variable bodies.
 
 main_entry:
-  location: "Root package level only"
+  location: "executable package"
   signatures:
     - "main(): Int64 { ... }"
     - "main(): Unit { ... }"
     - "main(args: Array<String>): Int64 { ... }"
     - "main(args: Array<String>): Unit { ... }"
   rules:
-    - "At most one per module"
+    - "At most one per package"
     - "No access modifier allowed on main"
     - "Not imported when package is used as a library"
     - "Does not require func keyword"
