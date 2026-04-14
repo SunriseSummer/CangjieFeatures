@@ -3,9 +3,8 @@
 
 test_basics:
   setup: |
-    # Test file: src/xxx_test.cj (alongside src/xxx.cj)
-    # In test mode, unittest and unittest.testmacro are auto-imported
-    # Run with: cjpm test
+    # Test file: src/xxx_test.cj — unittest packages auto-imported in test mode
+    # Run: cjpm test
 
   test_function:
     syntax: |
@@ -225,13 +224,4 @@ benchmark:
     @Bench
     func measuredBench() { ... }
 
-cli_options:
-  - "--filter=pattern"             # Filter tests by wildcard
-  - "--timeout-each=10s"           # Per-test timeout
-  - "--parallel"                   # Parallel execution
-  - "--include-tags / --exclude-tags"  # Tag-based filtering
-  - "--report-path / --report-format"  # Report output (xml/csv/html)
-  - "--dry-run"                    # Print test list without running
-  - "--no-capture-output"          # Don't capture stdout
-  - "--bench"                      # Run benchmarks (alternative to cjpm bench)
-  - "--coverage-guided"            # Coverage-guided testing
+cli_options: "See 18_project_init_build_run.yaml test_options for full CLI flags"

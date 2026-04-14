@@ -57,7 +57,7 @@ reflection:
     throws: "InfoNotFoundException if type not found"
 
   class_type_info:
-    description: "Extended info for class types (subclass of TypeInfo)"
+    description: "Extended info for class types (extends TypeInfo)"
     capabilities:
       - "getStaticVariable(name: String)"
       - "getInstanceVariable(name: String)"
@@ -74,6 +74,5 @@ reflection:
 
   limitations:
     - "Only public members are accessible via reflection"
-    - "Private and protected members are not visible"
     - "Cannot reflect uninstantiated generic types"
     - "Performance is lower than direct access"
