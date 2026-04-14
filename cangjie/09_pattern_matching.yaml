@@ -40,8 +40,8 @@ match_expression:
     }
 
   type_rules: |
-    - With context type: each branch body must be subtype of expected type
-    - Without context type: type is the least common supertype of all branches
+    - With context type: each branch must be subtype of expected type
+    - Without context type: type is least common supertype of all branches
     - Value unused: type is Unit, no common supertype required
 
 pattern_types:
@@ -104,7 +104,7 @@ pattern_guards:
     }
 
 nested_patterns:
-  description: "Tuple and enum patterns can be nested to any depth"
+  description: "Tuple and enum patterns can nest to any depth"
   example: |
     match (expr) {
         case Add(Num(a), Num(b)) => a + b

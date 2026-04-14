@@ -11,7 +11,8 @@ class_definition:
         // operator functions
     }
 
-  reference_type: "Classes are reference types; assignment shares identity"
+  reference_type: "Classes are reference types; assignment shares identity (not copied)"
+  open_keyword: "Classes are NOT inheritable by default — must use `open` keyword to allow subclassing"
 
   example: |
     class Person {
@@ -74,9 +75,7 @@ constructors:
       Primary constructor name matches class name.
       Defined INSIDE class body with let/var parameters.
       Combines parameter declaration and field initialization.
-  auto_generated: |
-    If all member variables have default values and no explicit constructor,
-    a parameterless init() is auto-generated.
+  auto_generated: "If all fields have defaults and no explicit constructor, parameterless init() is auto-generated"
   overloading: "Multiple init() constructors with different parameter lists"
 
   destructor:
@@ -159,8 +158,7 @@ properties:
       }
     usage: "obj.name = newValue"
 
-  abstract_property: |
-    abstract prop name: Type  // in abstract class or interface
+  abstract_property: "abstract prop name: Type"  # in abstract class or interface
 
   static_property: |
     static prop count: Int64 {

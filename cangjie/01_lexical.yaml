@@ -4,7 +4,7 @@
 keywords:
   declaration:
     - let       # immutable binding
-    - var       # mutable binding
+    - var       # mutable binding; also used for mutable struct fields
     - const     # compile-time constant
     - func
     - class
@@ -30,7 +30,7 @@ keywords:
     - redef      # redefines parent static member
     - abstract   # no implementation, must be overridden
     - static     # belongs to type, not instance
-    - sealed     # contextual; restricts inheritance/implementation to same package
+    - sealed     # restricts inheritance/implementation to same package
     - mut        # mutable property or struct-mutating function
   control_flow:
     - if
@@ -236,9 +236,11 @@ literals:
       - f64       # default
   Bool: ["true", "false"]
   Rune:
-    - "'A'"          # character literal
-    - "'\\n'"        # escape character
-    - "'\\u{1F600}'" # Unicode code point
+    examples:
+      - "r'A'"          # canonical Rune literal (r prefix)
+      - "r'\\n'"        # escape character
+      - "r'\\u{1F600}'" # Unicode code point
+    note: "Without r prefix, a single-char string literal in Rune-expected context is implicitly converted to Rune"
   String:
     single_line:
       - '"Hello, ${name}!"'  # interpolation with ${expr}
@@ -256,7 +258,7 @@ literals:
   Array: "[1, 2, 3]"      # Array<Int64>
   Tuple: "(1, true, 3.0)" # (Int64, Bool, Float64)
   Range:
-    - "1..5"         # Range<Int64> inclusive [1,5)
+    - "1..5"         # Range<Int64> half-open [1,5)
     - "1..6:2"       # [1,5) by step 2: 1, 3, 5
     - "1..=5"        # Range<Int64> fully inclusive [1,5] (with ..= operator)
   Unit: "()"

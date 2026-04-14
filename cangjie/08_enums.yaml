@@ -42,19 +42,13 @@ enum_definition:
     }
 
   non_exhaustive: |
-    enum Token {
-        | Number | Plus | Minus | ...
-    }
+    enum Token { | Number | Plus | Minus | ... }
     // match on non-exhaustive enum must include catch-all _ or binding pattern
 
   constructor_naming: |
     Constructor names cannot be Cangjie keywords (Bool, String, Int64, etc.).
     Use backticks to escape: `Bool`, `String`.
-    Example:
-      enum Value {
-          | `Bool`(Bool)
-          | Num(Int64)
-      }
+    enum Value { | `Bool`(Bool) | Num(Int64) }
 
 enum_usage:
   construction: |

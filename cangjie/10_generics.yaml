@@ -98,12 +98,7 @@ variance:
       you could put a Dog into a Box<Cat> via Box<Animal> reference.
 
 type_parameter_scope:
-  description: |
-    Type parameters are in scope within the entire type body:
-    - Member variable types
-    - Method parameter/return types
-    - Constructor parameters
-    - Can be used in nested expressions
+  description: "Type parameters are in scope for member variables, method params/returns, constructors, and nested expressions"
   restriction: |
     Cannot use uninstantiated generic type in expressions:
       Box         // ERROR: type constructor, not a type
