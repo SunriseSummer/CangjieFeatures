@@ -212,7 +212,7 @@ literals:
       - "r'A'"          # canonical Rune literal (r prefix)
       - "r'\\n'"        # escape character
       - "r'\\u{1F600}'" # Unicode code point
-    note: "Without r prefix, single-char string is implicitly converted to Rune"
+    note: "Without r prefix, a single-char string literal in Rune-expected context is implicitly converted to Rune"
   String:
     single_line:
       - '"Hello, ${name}!"'  # interpolation with ${expr}

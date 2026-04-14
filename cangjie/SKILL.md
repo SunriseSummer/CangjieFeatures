@@ -7,7 +7,7 @@
 ## 基础语法
 
 - **[01 — 词法元素](01_lexical.yaml)**：关键字、标识符、运算符优先级（0-18 级）、字面量（整数/浮点/布尔/Rune/字符串/数组/元组/区间）
-- **[02 — 类型系统](02_type_system.yaml)**：类型层次（Any/Nothing/Object）、内建类型、元组、数组（Array/VArray）、区间、函数类型、Option\<T\>、类型转换与子类型规则、类型别名
+- **[02 — 类型系统](02_type_system.yaml)**：类型层次（Any/Nothing/Object）、内建类型、元组、数组（Array/VArray）、区间、函数类型、`Option<T>`、类型转换与子类型规则、类型别名
 - **[03 — 变量与表达式](03_variables_and_expressions.yaml)**：变量声明（let/var/const）、解构赋值、作用域、控制流表达式（if/while/for-in/match）、循环控制、区间与赋值
 
 ## 函数与类型定义
@@ -23,7 +23,7 @@
 - **[09 — 模式匹配](09_pattern_matching.yaml)**：match 表达式、模式类型（常量/通配符/绑定/元组/类型/枚举）、模式守卫（where）、嵌套模式、if-let/while-let、let 与 for-in 中的模式、可反驳性
 - **[10 — 泛型](10_generics.yaml)**：泛型函数/类/结构体/接口/枚举、约束（where）、多重约束、型变（不变/协变/逆变）、类型参数作用域、实例化
 - **[11 — 错误处理](11_error_handling.yaml)**：异常层次（Error/Exception）、自定义异常、throw、try/catch/finally、try-with-resources、catch 模式、Option 型错误处理、最佳实践
-- **[12 — 并发编程](12_concurrency.yaml)**：M:N 线程模型、spawn 创建线程、Future\<T\>、sleep/Duration（核心包，无需导入）、原子操作（AtomicInt64 等）、Mutex、synchronized、条件变量、ThreadLocal、SyncCounter、协作取消
+- **[12 — 并发编程](12_concurrency.yaml)**：M:N 线程模型、spawn 创建线程、`Future<T>`、sleep/Duration（核心包，无需导入）、原子操作（AtomicInt64 等）、Mutex、synchronized、条件变量、ThreadLocal、SyncCounter、协作取消
 - **[13 — 类型扩展](13_extensions.yaml)**：直接扩展（extend）、接口扩展、泛型扩展、扩展中的访问与可见性规则、孤儿规则
 
 ## 模块与工具链
